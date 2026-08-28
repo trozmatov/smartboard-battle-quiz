@@ -1,0 +1,447 @@
+/* Smartboard Quiz Battle - Global & Split-Screen Styling */
+
+:root {
+  --font-display: 'Fredoka', cursive, sans-serif;
+  --font-body: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  --p1-primary: #FF5722;
+  --p1-secondary: #FF8A65;
+  --p1-bg: #FFF3E0;
+  --p1-dark: #D84315;
+  --p1-gradient: linear-gradient(135deg, #FF5722 0%, #FF9800 100%);
+
+  --p2-primary: #0288D1;
+  --p2-secondary: #4FC3F7;
+  --p2-bg: #E1F5FE;
+  --p2-dark: #01579B;
+  --p2-gradient: linear-gradient(135deg, #0288D1 0%, #00BCD4 100%);
+
+  --opt-a: #E53935;
+  --opt-b: #1E88E5;
+  --opt-c: #FDD835;
+  --opt-d: #43A047;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: #0F172A;
+  color: #F8FAFC;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Ensure all form inputs, textareas & selects have explicit dark backgrounds and bright text */
+.form-control, .form-select, textarea, input[type="text"], input[type="password"], input[type="number"] {
+  background-color: #0F172A !important;
+  color: #FFFFFF !important;
+  border-color: #334155 !important;
+}
+
+.form-control:focus, .form-select:focus, textarea:focus {
+  background-color: #1E293B !important;
+  color: #FFFFFF !important;
+  border-color: #38BDF8 !important;
+  box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.25) !important;
+}
+
+.form-control::placeholder, textarea::placeholder {
+  color: #94A3B8 !important;
+  opacity: 0.8 !important;
+}
+
+h1, h2, h3, h4, h5, h6, .brand-font {
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+/* Smartboard Split Screen Container */
+.game-viewport {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #0F172A;
+  overflow: hidden;
+}
+
+/* Split-Screen Main Columns */
+.split-arena {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  height: calc(100vh - 84px);
+  position: relative;
+}
+
+.player-half {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  position: relative;
+  transition: all 0.3s ease;
+  overflow-y: auto;
+}
+
+/* Player 1 Half - Vibrant Sunset Orange */
+.p1-arena {
+  background: linear-gradient(180deg, #1E1B18 0%, #2A190C 100%);
+  border-right: 4px solid #334155;
+}
+
+/* Player 2 Half - Vibrant Electric Blue */
+.p2-arena {
+  background: linear-gradient(180deg, #101B2B 0%, #0A1B30 100%);
+  border-left: 4px solid #334155;
+}
+
+/* Question Banner inside arena */
+.question-display-box {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
+  padding: 1.75rem;
+  min-height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 1.45rem;
+  font-weight: 600;
+  line-height: 1.4;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  margin-bottom: 1.5rem;
+}
+
+/* Smartboard Answer Buttons Grid */
+.answers-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  flex: 1;
+  margin-top: auto;
+}
+
+.answer-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 1.25rem 1.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  border-radius: 16px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  min-height: 85px;
+  text-align: left;
+  color: #FFFFFF;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.answer-btn:active {
+  transform: scale(0.96);
+}
+
+.answer-btn.btn-a {
+  background: linear-gradient(135deg, #E53935 0%, #C62828 100%);
+}
+.answer-btn.btn-b {
+  background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%);
+}
+.answer-btn.btn-c {
+  background: linear-gradient(135deg, #F9A825 0%, #F57F17 100%);
+  color: #1A1A1A;
+}
+.answer-btn.btn-d {
+  background: linear-gradient(135deg, #43A047 0%, #2E7D32 100%);
+}
+
+.option-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.25);
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-right: 1rem;
+  flex-shrink: 0;
+  color: #FFF;
+}
+
+.answer-btn.btn-c .option-badge {
+  background: rgba(0, 0, 0, 0.15);
+  color: #000;
+}
+
+/* Feedback States */
+.answer-btn.is-correct {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
+  color: #FFF !important;
+  animation: pulse-correct 0.8s infinite alternate;
+  box-shadow: 0 0 25px rgba(16, 185, 129, 0.8);
+}
+
+.answer-btn.is-wrong {
+  background: linear-gradient(135deg, #EF4444 0%, #B91C1C 100%) !important;
+  opacity: 0.6;
+  filter: grayscale(0.5);
+}
+
+.answer-btn.is-dimmed {
+  opacity: 0.35;
+  filter: grayscale(0.8);
+}
+
+@keyframes pulse-correct {
+  from { transform: scale(1); }
+  to { transform: scale(1.03); }
+}
+
+/* Touch & Smartboard Ripple / Glow */
+.touch-card {
+  border-radius: 20px;
+  background: #1E293B;
+  border: 1px solid #334155;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Top HUD Banner */
+.hud-header {
+  height: 84px;
+  background: #0B1120;
+  border-bottom: 2px solid #1E293B;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  z-index: 10;
+}
+
+.hud-player {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 220px;
+}
+
+.hud-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.p1-avatar {
+  background: var(--p1-gradient);
+  color: white;
+}
+
+.p2-avatar {
+  background: var(--p2-gradient);
+  color: white;
+}
+
+.hud-score {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.p1-score-text {
+  color: #FF7043;
+}
+
+.p2-score-text {
+  color: #29B6F6;
+}
+
+/* Timer Ring */
+.hud-timer-badge {
+  background: #1E293B;
+  border: 2px solid #3B82F6;
+  border-radius: 50px;
+  padding: 0.4rem 1.4rem;
+  font-size: 1.6rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: #38BDF8;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+}
+
+.hud-timer-badge.timer-urgent {
+  border-color: #EF4444;
+  color: #F87171;
+  animation: pulse-urgent 0.5s infinite alternate;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+}
+
+@keyframes pulse-urgent {
+  from { transform: scale(1); }
+  to { transform: scale(1.08); }
+}
+
+/* Responsive adjustments for smartboards and smaller displays */
+@media (max-width: 900px) {
+  .split-arena {
+    flex-direction: column;
+    height: auto;
+  }
+  .player-half {
+    min-height: 45vh;
+  }
+  .answers-grid {
+    grid-template-columns: 1fr;
+  }
+  .hud-header {
+    height: auto;
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+}
+
+/* ==========================================================================
+   DUAL UI/UX SYSTEM: SMARTBOARD MODE vs LAPTOP MODE
+   ========================================================================== */
+
+/* ========== 1. SMARTBOARD MODE (.mode-smartboard) ========== */
+body.mode-smartboard {
+  font-size: 1.15rem;
+  background-color: #080D1A !important;
+}
+
+body.mode-smartboard .btn {
+  padding: 0.85rem 1.6rem !important;
+  font-size: 1.15rem !important;
+  font-weight: 700 !important;
+  border-radius: 50px !important;
+  min-height: 52px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+}
+
+body.mode-smartboard .btn-sm {
+  padding: 0.55rem 1.2rem !important;
+  font-size: 0.95rem !important;
+  min-height: 42px !important;
+}
+
+body.mode-smartboard .btn-lg {
+  padding: 1.1rem 2.2rem !important;
+  font-size: 1.35rem !important;
+  min-height: 64px !important;
+}
+
+body.mode-smartboard .form-control,
+body.mode-smartboard .form-select,
+body.mode-smartboard textarea {
+  font-size: 1.15rem !important;
+  padding: 0.85rem 1.2rem !important;
+  border-width: 2px !important;
+}
+
+body.mode-smartboard .question-display-box {
+  padding: 2rem !important;
+  font-size: 1.6rem !important;
+  min-height: 140px !important;
+  line-height: 1.4 !important;
+}
+
+body.mode-smartboard .answer-btn {
+  min-height: 110px !important;
+  font-size: 1.35rem !important;
+  padding: 1.2rem 1.5rem !important;
+}
+
+body.mode-smartboard .badge {
+  font-size: 0.95rem !important;
+  padding: 0.5rem 1rem !important;
+  letter-spacing: 0.5px;
+}
+
+/* ========== 2. LAPTOP MODE (.mode-laptop) ========== */
+body.mode-laptop {
+  font-size: 0.95rem;
+  background-color: #0F172A !important;
+}
+
+body.mode-laptop .btn {
+  padding: 0.45rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+body.mode-laptop .btn-sm {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.825rem;
+}
+
+body.mode-laptop .btn-lg {
+  padding: 0.75rem 1.5rem;
+  font-size: 1.05rem;
+}
+
+body.mode-laptop .form-control,
+body.mode-laptop .form-select,
+body.mode-laptop textarea {
+  font-size: 0.925rem;
+  padding: 0.5rem 0.85rem;
+}
+
+body.mode-laptop .question-display-box {
+  padding: 1.25rem;
+  font-size: 1.15rem;
+  min-height: 90px;
+}
+
+body.mode-laptop .answer-btn {
+  min-height: 75px;
+  font-size: 1.05rem;
+  padding: 0.75rem 1rem;
+}
+
+body.mode-laptop .badge {
+  font-size: 0.8rem;
+  padding: 0.35rem 0.75rem;
+}
+
+/* Common UI Glassmorphism & High Readability */
+.glass-card {
+  background: rgba(30, 41, 59, 0.7) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.text-high-contrast {
+  color: #FFFFFF !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
