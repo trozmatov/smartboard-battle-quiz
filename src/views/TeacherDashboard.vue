@@ -426,30 +426,30 @@ onMounted(() => {
 
       <div class="container py-4 flex-grow-1" :class="{ 'px-lg-5': deviceMode === 'smartboard' }">
         
-        <!-- Hero Cards: Action Buttons (Both Balanced with Glassmorphism) -->
+        <!-- Hero Cards: Action Buttons (3 Column Layout with Jeopardy) -->
         <div class="row g-4 mb-5">
           
           <!-- Card 1: Manual Quiz Creator -->
-          <div class="col-md-6">
+          <div class="col-lg-4 col-md-6">
             <div 
               @click="openManualCreator"
               class="card h-100 p-4 rounded-4 border border-primary border-opacity-40 action-hero-card cursor-pointer shadow-lg transition-all"
               style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);"
             >
               <div class="d-flex align-items-start gap-3">
-                <div class="p-3 rounded-4 bg-primary bg-opacity-25 text-primary fs-1 d-flex align-items-center justify-content-center shadow-sm" style="width: 68px; height: 68px;">
+                <div class="p-3 rounded-4 bg-primary bg-opacity-25 text-primary fs-1 d-flex align-items-center justify-content-center shadow-sm" style="width: 60px; height: 60px;">
                   <span>✍️</span>
                 </div>
                 <div class="flex-grow-1">
                   <div class="d-flex align-items-center gap-2 mb-1">
-                    <h4 class="fw-bold text-white mb-0">Yangi Test Yaratish</h4>
+                    <h5 class="fw-bold text-white mb-0">Yangi 1v1 Test</h5>
                     <span class="badge bg-primary bg-opacity-30 text-info border border-primary border-opacity-40 rounded-pill px-2 py-0 fs-8">Qo'lda</span>
                   </div>
                   <p class="text-secondary small mb-3">
-                    Savollarni qo'lda kiritish, variantlarni belgilash, vaqt va ballarni moslashtirish.
+                    Savollarni qo'lda kiritish, variantlarni belgilash, vaqt va ballarni sozlash.
                   </p>
-                  <button class="btn btn-primary rounded-pill px-4 py-2 fw-bold text-white shadow-sm" :class="{ 'btn-lg w-100': deviceMode === 'smartboard' }">
-                    <span>Yaratish Oynasiga O'tish ➔</span>
+                  <button class="btn btn-primary rounded-pill px-3 py-2 fw-bold text-white shadow-sm w-100 btn-sm">
+                    <span>Yaratish Oynasi ➔</span>
                   </button>
                 </div>
               </div>
@@ -457,26 +457,53 @@ onMounted(() => {
           </div>
 
           <!-- Card 2: AI Quiz Generator (PDF & Documents) -->
-          <div class="col-md-6">
+          <div class="col-lg-4 col-md-6">
             <div 
               @click="openAiGeneratorModal"
               class="card h-100 p-4 rounded-4 border border-warning border-opacity-40 action-hero-card cursor-pointer shadow-lg transition-all"
               style="background: linear-gradient(135deg, rgba(42, 31, 12, 0.85) 0%, rgba(30, 41, 59, 0.95) 100%);"
             >
               <div class="d-flex align-items-start gap-3">
-                <div class="p-3 rounded-4 bg-warning bg-opacity-25 text-warning fs-1 d-flex align-items-center justify-content-center shadow-sm" style="width: 68px; height: 68px;">
+                <div class="p-3 rounded-4 bg-warning bg-opacity-25 text-warning fs-1 d-flex align-items-center justify-content-center shadow-sm" style="width: 60px; height: 60px;">
                   <span>🤖</span>
                 </div>
                 <div class="flex-grow-1">
                   <div class="d-flex align-items-center gap-2 mb-1">
-                    <h4 class="fw-bold text-white mb-0">PDF dan AI Test Yaratish</h4>
+                    <h5 class="fw-bold text-white mb-0">PDF dan AI Test</h5>
                     <span class="badge bg-warning text-dark fw-bold rounded-pill px-2 py-0 fs-8">Gemini AI</span>
                   </div>
                   <p class="text-secondary small mb-3">
-                    PDF kitob yoki darslikni yuklang. Google Embedding va Gemini avtomatik test tuzadi.
+                    PDF kitobni yuklang. Google Embedding va Gemini avtomatik test tuzadi.
                   </p>
-                  <button class="btn btn-warning rounded-pill px-4 py-2 fw-bold text-dark shadow-sm" :class="{ 'btn-lg w-100': deviceMode === 'smartboard' }">
-                    <span>✨ AI Test Generatsiya Qilish</span>
+                  <button class="btn btn-warning rounded-pill px-3 py-2 fw-bold text-dark shadow-sm w-100 btn-sm">
+                    <span>✨ AI Generatsiya</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Jeopardy Game Creator -->
+          <div class="col-lg-4 col-md-12">
+            <div 
+              @click="router.push('/jeopardy')"
+              class="card h-100 p-4 rounded-4 border border-info border-opacity-40 action-hero-card cursor-pointer shadow-lg transition-all"
+              style="background: linear-gradient(135deg, rgba(14, 116, 144, 0.3) 0%, rgba(30, 41, 59, 0.95) 100%);"
+            >
+              <div class="d-flex align-items-start gap-3">
+                <div class="p-3 rounded-4 bg-info bg-opacity-25 text-info fs-1 d-flex align-items-center justify-content-center shadow-sm" style="width: 60px; height: 60px;">
+                  <span>🎯</span>
+                </div>
+                <div class="flex-grow-1">
+                  <div class="d-flex align-items-center gap-2 mb-1">
+                    <h5 class="fw-bold text-white mb-0">Jeopardy Creator</h5>
+                    <span class="badge bg-info text-dark fw-bold rounded-pill px-2 py-0 fs-8">Yangi</span>
+                  </div>
+                  <p class="text-secondary small mb-3">
+                    5x5 Jeopardy o'yini tuzish (qo'lda yoki PDF dan AI orqali).
+                  </p>
+                  <button class="btn btn-info rounded-pill px-3 py-2 fw-bold text-dark shadow-sm w-100 btn-sm">
+                    <span>🎯 Jeopardy Studiyasi ➔</span>
                   </button>
                 </div>
               </div>

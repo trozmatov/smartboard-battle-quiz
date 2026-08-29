@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
 import TeacherDashboard from '../views/TeacherDashboard.vue';
 import GameView from '../views/GameView.vue';
+import JeopardyCreator from '../views/JeopardyCreator.vue';
+import JeopardyGameView from '../views/JeopardyGameView.vue';
 
 const routes = [
   {
@@ -15,6 +17,18 @@ const routes = [
     name: 'TeacherDashboard',
     component: TeacherDashboard,
     meta: { title: 'Teacher Admin Dashboard' }
+  },
+  {
+    path: '/jeopardy',
+    name: 'JeopardyCreator',
+    component: JeopardyCreator,
+    meta: { title: 'Jeopardy Game Creator' }
+  },
+  {
+    path: '/jeopardy/play',
+    name: 'JeopardyGameView',
+    component: JeopardyGameView,
+    meta: { title: 'Live Jeopardy Game Arena' }
   },
   {
     path: '/game',

@@ -70,7 +70,15 @@ function handleToggleMode() {
           class="btn btn-sm rounded-pill px-3"
           :class="route.path === '/' ? 'btn-primary' : 'btn-outline-light'"
         >
-          <span>🎮 O'yin</span>
+          <span>🎮 1v1 Quiz</span>
+        </router-link>
+
+        <router-link 
+          to="/jeopardy" 
+          class="btn btn-sm rounded-pill px-3"
+          :class="route.path === '/jeopardy' ? 'btn-info text-dark fw-bold' : 'btn-outline-info'"
+        >
+          <span>🎯 Jeopardy</span>
         </router-link>
 
         <router-link 
