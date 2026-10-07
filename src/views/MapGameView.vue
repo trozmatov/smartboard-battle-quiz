@@ -143,27 +143,13 @@ function initMaps() {
   }
 }
 
-const MAP_COLORS = [
-  '#FF595E', // Red-pink
-  '#FFCA3A', // Yellow
-  '#8AC926', // Green
-  '#1982C4', // Blue
-  '#6A4C93', // Purple
-  '#00C49A', // Teal
-  '#F58231', // Orange
-  '#42D4F4'  // Cyan
-];
-
-function getBaseStyle(feature) {
-  let hash = 0;
-  const name = feature?.properties?.name || '';
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const colorIndex = Math.abs(hash) % MAP_COLORS.length;
-  const fillColor = MAP_COLORS[colorIndex];
-
-  return { color: '#ffffff', weight: 1.5, fillColor: fillColor, fillOpacity: 0.9 };
+function getBaseStyle() {
+  return { 
+    color: '#64748B', // Lighter slate for clear borders
+    weight: 1.5,      // Slightly thicker border for readability
+    fillColor: '#1E293B', // Slate-800 for land (contrasts with Slate-950 background)
+    fillOpacity: 1 
+  };
 }
 
 function resetMapStyles() {
