@@ -1,7 +1,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import Navbar from '../components/Navbar.vue';
 import SavedQuizzesModal from '../components/SavedQuizzesModal.vue';
 import AiQuizModal from '../components/AiQuizModal.vue';
 import { getQuizzes, saveQuiz, updateQuiz, deleteQuiz, seedDefaultQuizzes, DEFAULT_QUIZZES } from '../firebase/quizService';
@@ -101,15 +100,30 @@ const aiQuizzesCount = computed(() => {
 });
 
 // ==================== AUTH METHODS ====================
-function handleLogin() {
+// SHA-256 hex digest (Web Crypto) so the plain password is never stored in source code.
+async function sha256Hex(text) {
+  const buffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function handleLogin() {
   authError.value = '';
   authLoading.value = true;
 
-  setTimeout(() => {
-    const user = loginUsername.value.trim().toLowerCase();
-    const pass = loginPassword.value.trim();
+  try {
+    const expectedUser = (import.meta.env.VITE_TEACHER_USERNAME || 'teacher').trim().toLowerCase();
+    const expectedHash = (import.meta.env.VITE_TEACHER_PASSWORD_HASH || '').trim().toLowerCase();
 
-    if ((user === 'admin' || user === 'teacher' || user === 'ustoz') && (pass === 'admin' || pass === 'teacher123' || pass === '123456' || pass === 'admin123')) {
+    if (!expectedHash) {
+      authError.value = 'Ustoz paroli sozlanmagan. .env faylida VITE_TEACHER_PASSWORD_HASH ni kiriting.';
+      sound.playWrong();
+      return;
+    }
+
+    const user = loginUsername.value.trim().toLowerCase();
+    const passHash = await sha256Hex(loginPassword.value.trim());
+
+    if (user === expectedUser && passHash === expectedHash) {
       isAuthenticated.value = true;
       if (rememberMe.value) {
         localStorage.setItem('teacher_auth', 'true');
@@ -118,11 +132,15 @@ function handleLogin() {
       sound.playCorrect();
       fetchLibraryQuizzes();
     } else {
-      authError.value = 'Noto\'g\'ri Login yoki Parol! (Standart: teacher / teacher123)';
+      authError.value = 'Noto\'g\'ri Login yoki Parol!';
       sound.playWrong();
     }
+  } catch (err) {
+    console.warn('Login check failed:', err);
+    authError.value = 'Tekshirishda xatolik. Sahifa HTTPS yoki localhost orqali ochilganini tekshiring.';
+  } finally {
     authLoading.value = false;
-  }, 300);
+  }
 }
 
 function handleLogout() {
@@ -307,7 +325,6 @@ onMounted(() => {
 
 <template>
   <div class="min-vh-100 d-flex flex-column bg-slate-950 text-light" style="background-color: #0F172A;">
-    <Navbar />
 
     <!-- ==================== 1. TEACHER LOGIN SCREEN ==================== -->
     <div v-if="!isAuthenticated" class="flex-grow-1 d-flex align-items-center justify-content-center p-4">
@@ -373,8 +390,8 @@ onMounted(() => {
               <input class="form-check-input" type="checkbox" v-model="rememberMe" id="remCheck">
               <label class="form-check-label text-light" for="remCheck">Eslab qolish</label>
             </div>
-            <span class="text-warning fw-semibold cursor-pointer" title="Standart: teacher / teacher123">
-              <i class="bi bi-info-circle me-1"></i> Standart: teacher123
+            <span class="text-secondary small">
+              <i class="bi bi-shield-lock me-1"></i> Faqat ustozlar uchun
             </span>
           </div>
 

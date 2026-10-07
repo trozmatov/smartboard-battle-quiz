@@ -142,11 +142,11 @@ Return ONLY a strictly valid JSON object matching this schema:
       const modelName = REST_CASCADE[i];
       try {
         console.log(`[Jeopardy AI Cascade] Urinish ${i + 1}: ${modelName}...`);
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${effectiveApiKey.trim()}`;
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
 
         const res = await fetch(endpoint, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': effectiveApiKey.trim() },
           body: JSON.stringify({
             contents: [
               {

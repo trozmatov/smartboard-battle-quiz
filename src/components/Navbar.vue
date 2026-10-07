@@ -7,14 +7,14 @@ import { useDeviceMode } from '../composables/useDeviceMode';
 const router = useRouter();
 const route = useRoute();
 const soundOn = ref(true);
-const { deviceMode, toggleMode } = useDeviceMode();
+const { deviceMode, setMode } = useDeviceMode();
 
 function toggleSound() {
   soundOn.value = sound.toggleSound();
 }
 
-function handleToggleMode() {
-  toggleMode();
+function handleSetMode(mode) {
+  setMode(mode);
   sound.playTick();
 }
 </script>
@@ -25,7 +25,7 @@ function handleToggleMode() {
       <router-link to="/" class="navbar-brand d-flex align-items-center gap-2">
         <span class="fs-3">⚡</span>
         <span class="fw-bold tracking-wide" style="font-family: var(--font-display); background: linear-gradient(135deg, #FF6B35, #00BCD4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-          Smartboard Quiz Battle
+          HistoryPro Battle
         </span>
       </router-link>
 
@@ -34,7 +34,7 @@ function handleToggleMode() {
         <!-- UI / UX Mode Switcher Toggle -->
         <div class="btn-group btn-group-sm rounded-pill p-1 border border-secondary border-opacity-50" style="background-color: #1E293B;">
           <button 
-            @click="handleToggleMode" 
+            @click="handleSetMode('smartboard')" 
             class="btn btn-sm rounded-pill px-3 py-1 d-flex align-items-center gap-1 transition-all"
             :class="deviceMode === 'smartboard' ? 'btn-warning text-dark fw-bold shadow' : 'btn-dark text-secondary'"
             title="Dars vaqtida katta sensorli doska uchun moslashtirilgan ko'rinish"
@@ -44,7 +44,7 @@ function handleToggleMode() {
           </button>
           
           <button 
-            @click="handleToggleMode" 
+            @click="handleSetMode('laptop')" 
             class="btn btn-sm rounded-pill px-3 py-1 d-flex align-items-center gap-1 transition-all"
             :class="deviceMode === 'laptop' ? 'btn-primary text-white fw-bold shadow' : 'btn-dark text-secondary'"
             title="Ustoz testlarni noutbuk/kompyuterda qulay tuzishi uchun moslashtirilgan ko'rinish"
@@ -68,17 +68,34 @@ function handleToggleMode() {
         <router-link 
           to="/" 
           class="btn btn-sm rounded-pill px-3"
-          :class="route.path === '/' ? 'btn-primary' : 'btn-outline-light'"
+          :class="route.path === '/' ? 'btn-primary text-white fw-bold' : 'btn-outline-light'"
+          title="Bosh sahifa"
         >
-          <span>🎮 1v1 Quiz</span>
+          <span>🏠 Bosh Sahifa</span>
         </router-link>
 
         <router-link 
-          to="/jeopardy" 
+          to="/quiz-lobby" 
           class="btn btn-sm rounded-pill px-3"
-          :class="route.path === '/jeopardy' ? 'btn-info text-dark fw-bold' : 'btn-outline-info'"
+          :class="route.path === '/quiz-lobby' ? 'btn-info text-dark fw-bold' : 'btn-outline-info'"
         >
-          <span>🎯 Jeopardy</span>
+          <span>🎯 Quiz Battle</span>
+        </router-link>
+
+        <router-link 
+          to="/jeopardy-lobby" 
+          class="btn btn-sm rounded-pill px-3"
+          :class="route.path.startsWith('/jeopardy') ? 'btn-secondary text-white fw-bold' : 'btn-outline-secondary'"
+        >
+          <span>🧠 Jeopardy</span>
+        </router-link>
+
+        <router-link 
+          to="/maps" 
+          class="btn btn-sm rounded-pill px-3"
+          :class="route.path === '/maps' ? 'btn-success text-white fw-bold' : 'btn-outline-success'"
+        >
+          <span>🌍 Xaritalar</span>
         </router-link>
 
         <router-link 

@@ -4,6 +4,21 @@ import { ref, watch, onMounted } from 'vue';
 const savedMode = typeof window !== 'undefined' ? localStorage.getItem('device_mode') : null;
 export const deviceMode = ref(savedMode || 'laptop');
 
+function updateBodyClass(mode) {
+  if (typeof document !== 'undefined') {
+    document.body.classList.remove('mode-smartboard', 'mode-laptop');
+    document.body.classList.add(`mode-${mode}`);
+  }
+}
+
+// Apply initial mode
+updateBodyClass(deviceMode.value);
+
+// Watch mode changes globally
+watch(deviceMode, (newMode) => {
+  updateBodyClass(newMode);
+});
+
 /**
  * Composable to manage and switch between Smartboard and Laptop UI/UX modes
  */
@@ -22,18 +37,6 @@ export function useDeviceMode() {
     const next = deviceMode.value === 'smartboard' ? 'laptop' : 'smartboard';
     setMode(next);
   }
-
-  function updateBodyClass(mode) {
-    if (typeof document !== 'undefined') {
-      document.body.classList.remove('mode-smartboard', 'mode-laptop');
-      document.body.classList.add(`mode-${mode}`);
-    }
-  }
-
-  // Watch mode changes
-  watch(deviceMode, (newMode) => {
-    updateBodyClass(newMode);
-  });
 
   return {
     deviceMode,

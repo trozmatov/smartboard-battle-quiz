@@ -1,7 +1,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import Navbar from '../components/Navbar.vue';
 import { 
   saveJeopardyGame, 
   getJeopardyGames, 
@@ -297,13 +296,17 @@ function handlePlaySavedGame(game) {
 }
 
 onMounted(() => {
+  const isAuth = sessionStorage.getItem('teacher_auth') === 'true' || localStorage.getItem('teacher_auth') === 'true';
+  if (!isAuth) {
+    router.push('/teacher');
+    return;
+  }
   fetchSavedGames();
 });
 </script>
 
 <template>
   <div class="min-vh-100 d-flex flex-column bg-slate-950 text-light" style="background-color: #0B1120;">
-    <Navbar />
 
     <!-- Top Action Bar -->
     <header class="border-bottom border-secondary border-opacity-30 px-4 py-3 sticky-top" style="background-color: #1E293B; z-index: 100;">

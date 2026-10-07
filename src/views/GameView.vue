@@ -21,11 +21,19 @@ const userRole = ref(route.query.role || 'board'); // 'board' (smartboard), 'p1'
 const initialPin = ref(route.query.pin || '');
 
 // Local Game State with Anti-Cheat Independent Question Shuffling
-const initialBaseQuestions = DEFAULT_QUIZZES[0].questions;
+let localQuiz = null;
+try {
+  const stored = sessionStorage.getItem('localQuizData');
+  if (stored) localQuiz = JSON.parse(stored);
+} catch (e) {
+  console.error('Local quiz parse error', e);
+}
+
+const initialBaseQuestions = localQuiz?.questions?.length ? localQuiz.questions : DEFAULT_QUIZZES[0].questions;
 const game = ref({
-  id: gameId.value,
+  id: gameId.value || 'local-game',
   pin: initialPin.value || '123456',
-  quizTitle: 'Live Quiz Battle',
+  quizTitle: localQuiz?.title || 'Live Quiz Battle',
   status: 'in_progress',
   currentQuestionIndex: 0,
   roundEnded: false,

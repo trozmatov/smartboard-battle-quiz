@@ -67,10 +67,10 @@ export async function generateGoogleEmbeddings(chunks, apiKey) {
   for (const embModel of EMBEDDING_MODELS) {
     try {
       // 1. Try batchEmbedContents first
-      const batchEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${embModel}:batchEmbedContents?key=${apiKey.trim()}`;
+      const batchEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${embModel}:batchEmbedContents`;
       const batchRes = await fetch(batchEndpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey.trim() },
         body: JSON.stringify({
           requests: targetChunks.map(chunk => ({
             model: `models/${embModel}`,
@@ -93,10 +93,10 @@ export async function generateGoogleEmbeddings(chunks, apiKey) {
       // 2. If batch is not supported on this endpoint/proxy, try individual embedContent
       const singleResults = await Promise.allSettled(
         targetChunks.map(async (chunk) => {
-          const singleEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${embModel}:embedContent?key=${apiKey.trim()}`;
+          const singleEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${embModel}:embedContent`;
           const res = await fetch(singleEndpoint, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey.trim() },
             body: JSON.stringify({
               model: `models/${embModel}`,
               content: { parts: [{ text: chunk.content }] }
@@ -321,13 +321,11 @@ Chiqish formati: Faqatgina to'g'ridan-to'g'ri quyidagi JSON formatida javob ber:
     // Exact strict hierarchy requested by user:
     // 1) Gemini 3.7 Flash -> 2) Gemini 3.6 Flash -> 3) Gemini 3.5 Flash -> 4) Gemini 3.5 Flash Lite -> 5) Fallbacks
     const MODEL_CASCADE = [
-      'gemini-3.7-flash',
-      'gemini-3.6-flash',
-      'gemini-3.5-flash',
-      'gemini-3.5-flash-lite',
       'gemini-2.5-flash',
       'gemini-2.0-flash',
-      'gemini-1.5-flash'
+      'gemini-1.5-flash',
+      'gemini-1.5-flash-8b',
+      'gemini-1.5-pro'
     ];
 
     let lastError = null;
@@ -336,11 +334,11 @@ Chiqish formati: Faqatgina to'g'ridan-to'g'ri quyidagi JSON formatida javob ber:
       const modelName = MODEL_CASCADE[i];
       try {
         console.log(`[AI Cascade] ${i + 1}-urinish: Model "${modelName}" orqali generatsiya qilinmoqda...`);
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${effectiveApiKey.trim()}`;
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
 
         const response = await fetch(endpoint, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': effectiveApiKey.trim() },
           body: JSON.stringify({
             contents: [
               {

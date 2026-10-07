@@ -133,7 +133,7 @@ function handleOpenInEditor() {
 <template>
   <div v-if="show" class="modal-backdrop fade show" style="background-color: rgba(15, 23, 42, 0.88); backdrop-filter: blur(10px); z-index: 1060;"></div>
   
-  <div v-if="show" class="modal fade show d-block" tabindex="-1" style="z-index: 1065;">
+  <div v-if="show" class="modal fade show d-block" tabindex="-1" style="z-index: 1065;" role="dialog" aria-modal="true" aria-labelledby="aiQuizModalTitle">
     <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content text-light border border-secondary border-opacity-40 shadow-2xl rounded-4 overflow-hidden" style="background-color: #0F172A;">
         
@@ -144,7 +144,7 @@ function handleOpenInEditor() {
               <i class="bi bi-robot"></i>
             </div>
             <div>
-              <h4 class="modal-title brand-font text-white mb-0 d-flex align-items-center gap-2">
+              <h4 id="aiQuizModalTitle" class="modal-title brand-font text-white mb-0 d-flex align-items-center gap-2">
                 PDF dan AI Test Yaratish
                 <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-40 rounded-pill fs-7">
                   Google Embedding & Gemini

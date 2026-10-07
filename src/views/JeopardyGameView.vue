@@ -400,19 +400,19 @@ onUnmounted(() => {
     </footer>
 
     <!-- ==================== FULLSCREEN QUESTION MODAL ==================== -->
-    <div v-if="activeModal.show" class="modal-backdrop fade show" style="background-color: rgba(3, 7, 18, 0.95); backdrop-filter: blur(15px); z-index: 1060;"></div>
+    <div v-if="activeModal.show" class="modal-backdrop fade show jeopardy-modal-backdrop"></div>
 
-    <div v-if="activeModal.show" class="modal fade show d-block" tabindex="-1" style="z-index: 1065;">
+    <div v-if="activeModal.show" class="modal fade show d-block jeopardy-modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="jeopardyModalTitle">
       <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content text-light border-2 border-warning border-opacity-50 shadow-2xl rounded-5 overflow-hidden" style="background: radial-gradient(circle at top, #1E293B 0%, #070D1E 100%);">
+        <div class="modal-content text-light border-2 border-warning border-opacity-50 shadow-2xl rounded-5 overflow-hidden jeopardy-modal-content">
           
           <!-- Header -->
-          <div class="modal-header border-secondary border-opacity-25 px-5 py-4 d-flex align-items-center justify-content-between" style="background: linear-gradient(180deg, #1E3A8A 0%, #0F172A 100%);">
+          <div class="modal-header border-secondary border-opacity-25 px-5 py-4 d-flex align-items-center justify-content-between jeopardy-modal-header">
             <div>
               <span class="badge bg-warning text-dark fw-black fs-5 px-4 py-2 rounded-pill shadow">
                 ${{ activeModal.points }} Ballik Savol
               </span>
-              <h4 class="brand-font text-white mt-2 mb-0">
+              <h4 id="jeopardyModalTitle" class="brand-font text-white mt-2 mb-0">
                 {{ activeModal.categoryName }}
               </h4>
             </div>
@@ -442,7 +442,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Answer Box (Revealed with High Contrast) -->
-            <div v-if="activeModal.showAnswer" class="mt-4 p-4 rounded-4 shadow-xl border border-success animate__animated animate__fadeInUp" style="background: linear-gradient(135deg, rgba(6, 78, 59, 0.95) 0%, rgba(4, 47, 46, 0.98) 100%); border-color: #10B981 !important;">
+            <div v-if="activeModal.showAnswer" class="mt-4 p-4 rounded-4 shadow-xl border border-success animate__animated animate__fadeInUp jeopardy-answer-box">
               <h5 class="fw-bold mb-2" style="color: #FBBF24 !important;">💡 To'g'ri Javob:</h5>
               <p class="display-6 fw-black mb-0" style="color: #FFFFFF !important; font-size: 2.2rem; line-height: 1.3; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);">
                 {{ activeModal.answer || 'Javob kiritilmagan' }}
@@ -491,14 +491,14 @@ onUnmounted(() => {
     </div>
 
     <!-- ==================== GAME OVER / VICTORY PODIUM MODAL ==================== -->
-    <div v-if="isGameOver" class="modal-backdrop fade show" style="background-color: rgba(3, 7, 18, 0.95); backdrop-filter: blur(15px); z-index: 1070;"></div>
+    <div v-if="isGameOver" class="modal-backdrop fade show game-over-modal-backdrop"></div>
 
-    <div v-if="isGameOver" class="modal fade show d-block" tabindex="-1" style="z-index: 1075;">
+    <div v-if="isGameOver" class="modal fade show d-block game-over-modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="gameOverModalTitle">
       <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content text-light border-2 border-warning border-opacity-60 shadow-2xl rounded-5 text-center p-5" style="background: radial-gradient(circle at center, #1E293B 0%, #070D1E 100%);">
+        <div class="modal-content text-light border-2 border-warning border-opacity-60 shadow-2xl rounded-5 text-center p-5 game-over-modal-content">
           
           <div class="display-1 mb-2">🏆</div>
-          <h1 class="brand-font display-4 text-warning mb-2">Jeopardy G'olibi!</h1>
+          <h1 id="gameOverModalTitle" class="brand-font display-4 text-warning mb-2">Jeopardy G'olibi!</h1>
           
           <div class="my-4 p-4 rounded-4 border-2 border-warning bg-warning bg-opacity-10 d-inline-block px-5">
             <h2 class="display-5 fw-black text-white mb-1" :style="{ color: winningTeam.color }">
@@ -590,4 +590,14 @@ onUnmounted(() => {
     font-size: 1.4rem !important;
   }
 }
+
+/* Modals specific classes */
+.jeopardy-modal-backdrop { background-color: rgba(3, 7, 18, 0.95); backdrop-filter: blur(15px); z-index: 1060; }
+.jeopardy-modal { z-index: 1065; }
+.jeopardy-modal-content { background: radial-gradient(circle at top, #1E293B 0%, #070D1E 100%); }
+.jeopardy-modal-header { background: linear-gradient(180deg, #1E3A8A 0%, #0F172A 100%); }
+.jeopardy-answer-box { background: linear-gradient(135deg, rgba(6, 78, 59, 0.95) 0%, rgba(4, 47, 46, 0.98) 100%); border-color: #10B981 !important; }
+.game-over-modal-backdrop { background-color: rgba(3, 7, 18, 0.95); backdrop-filter: blur(15px); z-index: 1070; }
+.game-over-modal { z-index: 1075; }
+.game-over-modal-content { background: radial-gradient(circle at center, #1E293B 0%, #070D1E 100%); }
 </style>

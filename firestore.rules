@@ -1,0 +1,142 @@
+rules_version = '2';
+
+// ===============================================================
+// PROTOTYPE RULES: review and harden before broad use.
+// ===============================================================
+//
+// This app has NO Firebase Authentication yet (the teacher panel is only a
+// client-side gate), so these rules cannot identify users. They are a
+// stop-gap that: (1) denies everything not used by the app, (2) validates
+// shape and size of every write, (3) protects immutable game fields
+// (questions, pin) and (4) bounds how fast a score can grow in one update.
+//
+// KNOWN LIMITATIONS (cannot be fixed with rules alone, needs Firebase Auth):
+//   - Anyone can read quizzes / games (correctIndex is inside game documents).
+//   - Anyone who knows a game id can still update that game within bounds.
+//   - Teacher-only writes (quizzes, jeopardy_games) are not enforceable.
+//
+// Assumed Data Model
+//
+// Collection: active_games / {autoId}
+//   pin: string (6 digits, immutable)       quizId: string (immutable)
+//   quizTitle: string (<= 200, immutable)   status: 'waiting'|'in_progress'|'finished'
+//   currentQuestionIndex: int               roundEnded: bool
+//   questions, p1Questions, p2Questions: list (<= 100, immutable)
+//   p1, p2: map { name: string<=20, score: number, answeredCurrent: bool,
+//                 selectedAnswer: int|null, isCorrect: bool|null, lastPointsWon: number }
+//   createdAt: string (ISO, immutable)
+//
+// Collection: quizzes / {autoId}
+//   title: string (<= 200), questions: list (<= 200), other metadata fields
+//
+// Collection: jeopardy_games / {autoId}
+//   title: string (<= 200), categories: list (<= 12), other metadata fields
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------
+    // Helper functions
+    // ---------------------------------------------------------------
+    function isShortString(value, maxLen) {
+      return value is string && value.size() <= maxLen;
+    }
+
+    function isValidPlayer(p) {
+      return p is map &&
+        p.keys().hasOnly(['name', 'score', 'answeredCurrent', 'selectedAnswer', 'isCorrect', 'lastPointsWon']) &&
+        isShortString(p.name, 20) &&
+        p.score is number && p.score >= 0 && p.score <= 100000 &&
+        p.answeredCurrent is bool &&
+        (p.selectedAnswer == null || p.selectedAnswer is int) &&
+        (p.isCorrect == null || p.isCorrect is bool) &&
+        p.lastPointsWon is number && p.lastPointsWon >= 0 && p.lastPointsWon <= 10000;
+    }
+
+    // A score may stay, drop (restart) or grow by at most 10000 per update.
+    function scoreGrowthBounded(newP, oldP) {
+      return newP.score - oldP.score <= 10000;
+    }
+
+    function isValidGameStatus(status) {
+      return status in ['waiting', 'in_progress', 'finished'];
+    }
+
+    // ---------------------------------------------------------------
+    // Domain validators (used on BOTH create and update)
+    // ---------------------------------------------------------------
+    function isValidNewGame(d) {
+      return d.keys().hasOnly(['pin', 'quizId', 'quizTitle', 'status', 'currentQuestionIndex',
+                               'roundEnded', 'questions', 'p1Questions', 'p2Questions',
+                               'p1', 'p2', 'createdAt']) &&
+        d.keys().hasAll(['pin', 'quizTitle', 'status', 'currentQuestionIndex', 'roundEnded',
+                         'questions', 'p1', 'p2']) &&
+        d.pin is string && d.pin.matches('^[0-9]{6}$') &&
+        isShortString(d.quizId, 200) &&
+        isShortString(d.quizTitle, 200) &&
+        isValidGameStatus(d.status) &&
+        d.currentQuestionIndex is int && d.currentQuestionIndex == 0 &&
+        d.roundEnded is bool &&
+        d.questions is list && d.questions.size() <= 100 &&
+        d.p1Questions is list && d.p1Questions.size() <= 100 &&
+        d.p2Questions is list && d.p2Questions.size() <= 100 &&
+        isValidPlayer(d.p1) && d.p1.score == 0 &&
+        isValidPlayer(d.p2) && d.p2.score == 0 &&
+        isShortString(d.createdAt, 40);
+    }
+
+    function isValidGameUpdate() {
+      let d = request.resource.data;
+      let old = resource.data;
+      return
+        // Only mutable game-state fields may change (pin, questions, titles are immutable).
+        d.diff(old).affectedKeys().hasOnly(['status', 'currentQuestionIndex', 'roundEnded', 'p1', 'p2']) &&
+        isValidGameStatus(d.status) &&
+        d.currentQuestionIndex is int && d.currentQuestionIndex >= 0 &&
+        d.currentQuestionIndex <= old.questions.size() &&
+        d.roundEnded is bool &&
+        isValidPlayer(d.p1) && isValidPlayer(d.p2) &&
+        scoreGrowthBounded(d.p1, old.p1) && scoreGrowthBounded(d.p2, old.p2);
+    }
+
+    function isValidQuiz(d) {
+      return isShortString(d.title, 200) &&
+        d.questions is list && d.questions.size() <= 200;
+    }
+
+    function isValidJeopardyGame(d) {
+      return isShortString(d.title, 200) &&
+        d.categories is list && d.categories.size() <= 12;
+    }
+
+    // ---------------------------------------------------------------
+    // Collections (default deny for everything else)
+    // ---------------------------------------------------------------
+    match /active_games/{gameId} {
+      // Read is needed for PIN lookup (where pin == X) and realtime sync.
+      allow read: if true;
+      allow create: if isValidNewGame(request.resource.data);
+      allow update: if isValidGameUpdate();
+      allow delete: if false;
+    }
+
+    match /quizzes/{quizId} {
+      allow read: if true;
+      allow create: if isValidQuiz(request.resource.data);
+      allow update: if isValidQuiz(request.resource.data);
+      allow delete: if true; // TODO(auth): restrict to teachers once Firebase Auth exists
+    }
+
+    match /jeopardy_games/{gameId} {
+      allow read: if true;
+      allow create: if isValidJeopardyGame(request.resource.data);
+      allow update: if isValidJeopardyGame(request.resource.data);
+      allow delete: if true; // TODO(auth): restrict to teachers once Firebase Auth exists
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

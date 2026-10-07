@@ -85,7 +85,7 @@ export const DEFAULT_JEOPARDY_GAMES = [
  */
 export async function getJeopardyGames() {
   try {
-    const q = query(collection(db, JEOPARDY_COLLECTION), orderBy('createdAt', 'desc'));
+    const q = collection(db, JEOPARDY_COLLECTION);
     const querySnapshot = await getDocs(q);
     
     const games = [];

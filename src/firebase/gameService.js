@@ -21,7 +21,7 @@ const ACTIVE_GAMES_COLLECTION = 'active_games';
  * @param {string} [customPin] - Optional 6-digit PIN override
  * @returns {Promise<Object>} The created active game object with ID and PIN
  */
-export async function createGameSession(quiz, customPin = null) {
+export async function createGameSession(quiz, customPin = null, p1Name = 'Player 1', p2Name = 'Player 2') {
   try {
     const pin = customPin || generatePin();
     const baseQuestions = quiz.questions || [];
@@ -42,7 +42,7 @@ export async function createGameSession(quiz, customPin = null) {
       p1Questions: p1Questions,
       p2Questions: p2Questions,
       p1: {
-        name: 'Player 1',
+        name: p1Name || 'Player 1',
         score: 0,
         answeredCurrent: false,
         selectedAnswer: null,
@@ -50,7 +50,7 @@ export async function createGameSession(quiz, customPin = null) {
         lastPointsWon: 0
       },
       p2: {
-        name: 'Player 2',
+        name: p2Name || 'Player 2',
         score: 0,
         answeredCurrent: false,
         selectedAnswer: null,

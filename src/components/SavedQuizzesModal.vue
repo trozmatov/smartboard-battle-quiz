@@ -123,7 +123,7 @@ onMounted(() => {
 <template>
   <div v-if="show" class="modal-backdrop fade show" style="background-color: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); z-index: 1050;"></div>
   
-  <div v-if="show" class="modal fade show d-block" tabindex="-1" style="z-index: 1055;">
+  <div v-if="show" class="modal fade show d-block" tabindex="-1" style="z-index: 1055;" role="dialog" aria-modal="true" aria-labelledby="savedQuizzesModalTitle">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content text-light border border-secondary border-opacity-50 shadow-2xl rounded-4 overflow-hidden" style="background-color: #0F172A; border-color: #334155;">
         
@@ -134,7 +134,7 @@ onMounted(() => {
               <i class="bi bi-collection-play-fill"></i>
             </div>
             <div>
-              <h4 class="modal-title brand-font text-white mb-0 d-flex align-items-center gap-2">
+              <h4 id="savedQuizzesModalTitle" class="modal-title brand-font text-white mb-0 d-flex align-items-center gap-2">
                 Quiz Library & Templates
                 <span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-50 fs-7 rounded-pill">
                   {{ quizzes.length }} Available

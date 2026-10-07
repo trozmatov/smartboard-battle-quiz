@@ -1,15 +1,26 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
+import QuizLobbyView from '../views/QuizLobbyView.vue';
 import TeacherDashboard from '../views/TeacherDashboard.vue';
 import GameView from '../views/GameView.vue';
 import JeopardyCreator from '../views/JeopardyCreator.vue';
 import JeopardyGameView from '../views/JeopardyGameView.vue';
+import MapsView from '../views/MapsView.vue';
+import MapGameView from '../views/MapGameView.vue';
+import NotFoundView from '../views/NotFoundView.vue';
+import JeopardyLobbyView from '../views/JeopardyLobbyView.vue';
 
 const routes = [
   {
     path: '/',
     name: 'Home',
     component: HomeView,
+    meta: { title: 'Bosh Sahifa - Portal' }
+  },
+  {
+    path: '/quiz-lobby',
+    name: 'QuizLobby',
+    component: QuizLobbyView,
     meta: { title: 'Join Quiz Battle' }
   },
   {
@@ -25,6 +36,12 @@ const routes = [
     meta: { title: 'Jeopardy Game Creator' }
   },
   {
+    path: '/jeopardy-lobby',
+    name: 'JeopardyLobby',
+    component: JeopardyLobbyView,
+    meta: { title: 'Jeopardy O\'yinlari' }
+  },
+  {
     path: '/jeopardy/play',
     name: 'JeopardyGameView',
     component: JeopardyGameView,
@@ -37,9 +54,23 @@ const routes = [
     meta: { title: 'Dual-Player Split-Screen Game' }
   },
   {
-    // Catch-all redirect to Home
+    path: '/maps',
+    name: 'MapsView',
+    component: MapsView,
+    meta: { title: 'Xaritalar - Geo Quiz' }
+  },
+  {
+    path: '/map-game',
+    name: 'MapGameView',
+    component: MapGameView,
+    meta: { title: '1v1 Xarita O\'yini' }
+  },
+  {
+    // Catch-all route for 404 Not Found
     path: '/:pathMatch(.*)*',
-    redirect: '/'
+    name: 'NotFound',
+    component: NotFoundView,
+    meta: { title: 'Sahifa Topilmadi' }
   }
 ];
 
@@ -50,7 +81,7 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   if (to.meta.title) {
-    document.title = `${to.meta.title} | Smartboard Battle`;
+    document.title = `${to.meta.title} | HistoryPro Battle`;
   }
   next();
 });
