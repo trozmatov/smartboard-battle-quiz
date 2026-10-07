@@ -1,6 +1,9 @@
-// mapQuizService.js
-// Mapping of countries to their Uzbek names and regions
-export const UZ_COUNTRIES = {
+const fs = require('fs');
+
+let content = fs.readFileSync('src/services/mapQuizService.js', 'utf8');
+
+// Update UZ_COUNTRIES mapping with subRegions
+content = content.replace(/export const UZ_COUNTRIES = \{[\s\S]*?\n\};/, `export const UZ_COUNTRIES = {
   // Asia
   "Afghanistan": { uz: "Afg'oniston", region: "asia", subRegion: "south" },
   "Armenia": { uz: "Armaniston", region: "asia", subRegion: "west" },
@@ -139,17 +142,18 @@ export const UZ_COUNTRIES = {
   "Fiji": { uz: "Fiji", region: "oceania", subRegion: "main" },
   "New Zealand": { uz: "Yangi Zelandiya", region: "oceania", subRegion: "main" },
   "Papua New Guinea": { uz: "Papua Yangi Gvineya", region: "oceania", subRegion: "main" },
-};
+};`);
 
-export const REGIONS_CONFIG = [
+// Update REGIONS_CONFIG with subRegions
+content = content.replace(/export const REGIONS_CONFIG = \[[\s\S]*?\];/, `export const REGIONS_CONFIG = [
   { 
-    id: 'world', name: 'Butun Dunyo', desc: 'Barcha qit\'alardagi davlatlar aralashmasi.', icon: '🌍', mapIcon: 'bi-globe-americas', bg: '#475569', total: 130 
+    id: 'world', name: 'Butun Dunyo', desc: 'Barcha qit\\'alardagi davlatlar aralashmasi.', icon: '🌍', mapIcon: 'bi-globe-americas', bg: '#475569', total: 130 
   },
   { 
-    id: 'asia', name: 'Osiyo', desc: 'O\'zbekiston joylashgan, madaniyatlar chorrahasi.', icon: '🕌', mapIcon: 'bi-geo-alt-fill', bg: '#F59E0B', 
+    id: 'asia', name: 'Osiyo', desc: 'O\\'rta Osiyo, Sharqiy Osiyo va Yaqin Sharq hududlari.', icon: '🕌', mapIcon: 'bi-geo-alt-fill', bg: '#F59E0B', 
     total: Object.values(UZ_COUNTRIES).filter(c => c.region === 'asia').length,
     subRegions: [
-      { id: 'all', name: 'Barchasi (Osiyo)' },
+      { id: 'all', name: 'Barchasi' },
       { id: 'central', name: 'Markaziy Osiyo' },
       { id: 'east', name: 'Sharqiy Osiyo' },
       { id: 'south', name: 'Janubiy Osiyo' },
@@ -158,12 +162,12 @@ export const REGIONS_CONFIG = [
     ]
   },
   { 
-    id: 'europe', name: 'Yevropa', desc: 'Tarixiy obidalar va qadimiy davlatlar.', icon: '🏰', mapIcon: 'bi-geo-alt-fill', bg: '#3B82F6', 
+    id: 'europe', name: 'Yevropa', desc: 'Markaziy, G\\'arbiy va Sharqiy Yevropa hududlari.', icon: '🏰', mapIcon: 'bi-geo-alt-fill', bg: '#3B82F6', 
     total: Object.values(UZ_COUNTRIES).filter(c => c.region === 'europe').length,
     subRegions: [
-      { id: 'all', name: 'Barchasi (Yevropa)' },
+      { id: 'all', name: 'Barchasi' },
       { id: 'central', name: 'Markaziy Yevropa' },
-      { id: 'western', name: 'G\'arbiy Yevropa' },
+      { id: 'western', name: 'G\\'arbiy Yevropa' },
       { id: 'eastern', name: 'Sharqiy Yevropa' },
       { id: 'balkan', name: 'Bolqon Davlatlari' },
       { id: 'northern', name: 'Shimoliy Yevropa' },
@@ -171,12 +175,12 @@ export const REGIONS_CONFIG = [
     ]
   },
   { 
-    id: 'africa', name: 'Afrika', desc: 'Issiq qit\'aning hududlari.', icon: '🐘', mapIcon: 'bi-geo-alt-fill', bg: '#10B981', 
+    id: 'africa', name: 'Afrika', desc: 'Shimoliy, G\\'arbiy, Markaziy va Janubiy Afrika qit\\'asi.', icon: '🐘', mapIcon: 'bi-geo-alt-fill', bg: '#10B981', 
     total: Object.values(UZ_COUNTRIES).filter(c => c.region === 'africa').length,
     subRegions: [
-      { id: 'all', name: 'Barchasi (Afrika)' },
+      { id: 'all', name: 'Barchasi' },
       { id: 'north', name: 'Shimoliy Afrika' },
-      { id: 'west', name: 'G\'arbiy Afrika' },
+      { id: 'west', name: 'G\\'arbiy Afrika' },
       { id: 'central', name: 'Markaziy Afrika' },
       { id: 'east', name: 'Sharqiy Afrika' },
       { id: 'south', name: 'Janubiy Afrika' }
@@ -186,104 +190,74 @@ export const REGIONS_CONFIG = [
     id: 'namerica', name: 'Shimoliy Amerika', desc: 'Kanada, AQSh hamda Markaziy Amerika.', icon: '🗽', mapIcon: 'bi-geo-alt-fill', bg: '#EC4899', 
     total: Object.values(UZ_COUNTRIES).filter(c => c.region === 'namerica').length,
     subRegions: [
-      { id: 'all', name: 'Barchasi (Shimoliy Amerika)' },
+      { id: 'all', name: 'Barchasi' },
       { id: 'northern', name: 'Shimoliy (Kanada, AQSh)' },
       { id: 'central', name: 'Markaziy Amerika' },
       { id: 'caribbean', name: 'Karib Havzasi' }
     ]
   },
   { 
-    id: 'samerica', name: 'Janubiy Amerika', desc: 'Lotin Amerikasining yirik mintaqalari.', icon: '🦜', mapIcon: 'bi-geo-alt-fill', bg: '#8B5CF6', 
+    id: 'samerica', name: 'Janubiy Amerika', desc: 'Lotin Amerikasining eng yirik mintaqalari.', icon: '🦜', mapIcon: 'bi-geo-alt-fill', bg: '#8B5CF6', 
     total: Object.values(UZ_COUNTRIES).filter(c => c.region === 'samerica').length,
     subRegions: [
-      { id: 'all', name: 'Barchasi (Janubiy Amerika)' },
+      { id: 'all', name: 'Barchasi' },
       { id: 'north', name: 'Shimoliy Qismi' },
       { id: 'central', name: 'Markaziy Qismi' },
       { id: 'south', name: 'Janubiy Qismi' }
     ]
   },
   { 
-    id: 'oceania', name: 'Avstraliya va Okeaniya', desc: 'Tinch okeanidagi orollar va Avstraliya.', icon: '🦘', mapIcon: 'bi-geo-alt-fill', bg: '#F97316', 
+    id: 'oceania', name: 'Avstraliya va Okeaniya', desc: 'Tinch okeanidagi orol davlatlar.', icon: '🦘', mapIcon: 'bi-geo-alt-fill', bg: '#14B8A6', 
     total: Object.values(UZ_COUNTRIES).filter(c => c.region === 'oceania').length,
     subRegions: [
       { id: 'all', name: 'Barchasi' }
     ]
   }
-];
+];`);
 
-export async function fetchWorldGeoJSON() {
-  const url = 'https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json';
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Failed to fetch Map GeoJSON');
-    return await res.json();
-  } catch (err) {
-    console.error('GeoJSON yuklashda xatolik:', err);
-    return null;
+// Modify generateMapQuestions to support subRegion filtering
+content = content.replace(/export function generateMapQuestions\(geoJsonFeatures, limit, regionId\) \{[\s\S]*?return result;\n\}/, `export function generateMapQuestions(geoJsonFeatures, limit, regionId, subRegionId = 'all') {
+  let pool = [];
+
+  for (const feature of geoJsonFeatures) {
+    const enName = feature.properties?.name;
+    if (!enName) continue;
+
+    const uzInfo = UZ_COUNTRIES[enName];
+    if (uzInfo) {
+      // Check main region
+      if (regionId === 'world' || uzInfo.region === regionId) {
+        // Check sub-region if specified and not 'all'
+        if (subRegionId === 'all' || uzInfo.subRegion === subRegionId) {
+          pool.push({
+            id: feature.id || enName,
+            enName: enName,
+            uzName: uzInfo.uz,
+            region: uzInfo.region
+          });
+        }
+      }
+    }
   }
-}
 
-export function generateMapQuestions(allFeatures, count = 10, region = 'world', subRegion = 'all') {
-  // Filter out microstates and non-mapped countries
-  let candidates = allFeatures.filter(f => {
-    const cName = f.properties.name;
-    const countryData = UZ_COUNTRIES[cName];
-    if (!countryData) return false;
-    
-    // Filter by region if not 'world'
-    if (region !== 'world' && countryData.region !== region) return false;
-    
-    // Filter by subRegion if not 'all'
-    if (subRegion !== 'all' && countryData.subRegion !== subRegion) return false;
-    
-    return true;
+  // Shuffle pool
+  pool.sort(() => Math.random() - 0.5);
+
+  const numQuestions = limit === 'all' ? pool.length : Math.min(limit, pool.length);
+  const result = pool.slice(0, numQuestions);
+
+  // Generate options (currently not heavily used for map clicks, but required by format)
+  return result.map(q => {
+    return {
+      id: q.id,
+      questionText: \`\${q.uzName}ni xaritadan toping\`,
+      options: [q.uzName, 'Boshqa davlat'],
+      correctIndex: 0,
+      timeLimit: 20,
+      points: 100,
+      targetCountryEn: q.enName
+    };
   });
-  
-  // Shuffle candidates
-  for (let i = candidates.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
-  }
+}`);
 
-  // Adjust count if not enough countries
-  const maxCount = count === 'all' ? candidates.length : Math.min(count, candidates.length);
-
-  return candidates.slice(0, maxCount).map(feature => ({
-    targetCountryName: feature.properties.name,
-    targetCountryUz: UZ_COUNTRIES[feature.properties.name].uz,
-    points: 100,
-    timeLimit: 20
-  }));
-}
-
-export function getRegionBounds(geoJsonData, region) {
-  // Hardcoded bounds for cleaner zoom levels (avoiding overseas territories and antimeridian issues)
-  const REGION_BOUNDS = {
-    'asia': [
-      [-10, 35],   // SouthWest
-      [70, 145]    // NorthEast
-    ],
-    'europe': [
-      [35, -15],   
-      [72, 45]     
-    ],
-    'africa': [
-      [-35, -20],  
-      [38, 55]     
-    ],
-    'namerica': [
-      [5, -165],   
-      [80, -50]    
-    ],
-    'samerica': [
-      [-55, -85],  
-      [15, -30]    
-    ],
-    'oceania': [
-      [-48, 110],  
-      [5, 180]     
-    ]
-  };
-
-  return REGION_BOUNDS[region] || null;
-}
+fs.writeFileSync('src/services/mapQuizService.js', content, 'utf8');

@@ -8,10 +8,12 @@ const { getBestScore } = useMapScores();
 const router = useRouter();
 
 const selectedRegion = ref(null);
+const selectedSubRegion = ref('all');
 const questionLimit = ref(10); // default 10
 
 function openConfigModal(region) {
   selectedRegion.value = region;
+  selectedSubRegion.value = 'all'; // default to all
 }
 
 function cancelConfig() {
@@ -24,6 +26,7 @@ function startGame() {
     path: '/map-game', 
     query: { 
       region: selectedRegion.value.id,
+      subRegion: selectedSubRegion.value,
       limit: questionLimit.value
     } 
   });
@@ -118,13 +121,22 @@ function startGame() {
             <p class="text-secondary small mb-0">Test uchun savollar sonini tanlang</p>
           </div>
 
+          <div class="mb-4" v-if="selectedRegion.subRegions && selectedRegion.subRegions.length > 1">
+            <label class="form-label text-warning fw-bold">Mintaqani tanlang</label>
+            <select v-model="selectedSubRegion" class="form-select form-select-lg bg-slate-900 text-white border-warning mb-3">
+              <option v-for="sub in selectedRegion.subRegions" :key="sub.id" :value="sub.id">
+                {{ sub.name }}
+              </option>
+            </select>
+          </div>
+
           <div class="mb-4">
             <label class="form-label text-info fw-bold">Topshiriqlar soni</label>
             <select v-model="questionLimit" class="form-select form-select-lg bg-slate-900 text-white border-secondary">
               <option :value="10">10 ta savol</option>
               <option :value="15">15 ta savol</option>
               <option :value="20">20 ta savol</option>
-              <option :value="selectedRegion.total">Barchasi ({{ selectedRegion.total }} ta)</option>
+              <option :value="'all'">Barchasi</option>
             </select>
           </div>
 

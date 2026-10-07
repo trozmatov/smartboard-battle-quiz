@@ -84,8 +84,12 @@ async function initGame() {
     return;
   }
 
-  const questionLimit = parseInt(route.query.limit) || 10;
-  const baseQuestions = generateMapQuestions(geoJsonData.value.features, questionLimit, regionId);
+  let questionLimit = route.query.limit || 10;
+  if (questionLimit !== 'all') questionLimit = parseInt(questionLimit);
+  
+  const subRegionId = route.query.subRegion || 'all';
+  
+  const baseQuestions = generateMapQuestions(geoJsonData.value.features, questionLimit, regionId, subRegionId);
   if (baseQuestions.length === 0) {
     alert("Bu hududda savollar yetarli emas.");
     router.push('/maps');
