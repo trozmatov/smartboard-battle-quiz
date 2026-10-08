@@ -60,6 +60,22 @@ function isItemCorrect(item, index) {
   return originalIndex === index;
 }
 
+function moveUp(index) {
+  if (index > 0 && !isAnswered.value) {
+    const temp = localItems.value[index];
+    localItems.value[index] = localItems.value[index - 1];
+    localItems.value[index - 1] = temp;
+  }
+}
+
+function moveDown(index) {
+  if (index < localItems.value.length - 1 && !isAnswered.value) {
+    const temp = localItems.value[index];
+    localItems.value[index] = localItems.value[index + 1];
+    localItems.value[index + 1] = temp;
+  }
+}
+
 const shapes = [
   'polygon(50% 0%, 0% 100%, 100% 100%)', // Triangle
   'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)', // Diamond
@@ -108,7 +124,6 @@ function getShapeStyle(index) {
             <div 
               class="drag-handle d-flex align-items-center justify-content-center"
               style="width: 50px; cursor: grab; background-color: rgba(0,0,0,0.2);"
-              title="Sudrash uchun ushlang"
             >
               <div v-if="!isAnswered" style="width: 20px; height: 20px;" :style="getShapeStyle(index)"></div>
               <!-- Status Icon when answered -->
@@ -118,13 +133,19 @@ function getShapeStyle(index) {
               </div>
             </div>
 
-            <!-- Text Content -->
-            <div class="p-3 flex-grow-1 d-flex align-items-center text-white fw-bold fs-5">
+            <!-- Text Content (Also acts as a drag handle for easier touch) -->
+            <div class="drag-handle p-3 flex-grow-1 d-flex align-items-center text-white fw-bold fs-5" style="cursor: grab;" title="Sudrash uchun ushlang">
               {{ element.text }}
             </div>
             
+            <!-- Manual Move Buttons (For Smart Board UX) -->
+            <div v-if="!isAnswered" class="px-2 py-1 d-flex flex-column justify-content-center align-items-center border-start border-secondary border-opacity-25 gap-1" style="background-color: rgba(0,0,0,0.15); min-width: 50px;">
+              <button @click.stop="moveUp(index)" :disabled="index === 0" class="btn btn-sm btn-dark py-0 px-2 rounded opacity-75 hover-opacity-100" style="font-size: 1.2rem; line-height: 1;"><i class="bi bi-caret-up-fill"></i></button>
+              <button @click.stop="moveDown(index)" :disabled="index === localItems.length - 1" class="btn btn-sm btn-dark py-0 px-2 rounded opacity-75 hover-opacity-100" style="font-size: 1.2rem; line-height: 1;"><i class="bi bi-caret-down-fill"></i></button>
+            </div>
+
             <!-- Index indicator -->
-            <div class="px-3 d-flex align-items-center justify-content-center fw-bold fs-5 text-secondary border-start border-secondary border-opacity-25" style="background-color: rgba(0,0,0,0.1);">
+            <div class="px-3 d-flex align-items-center justify-content-center fw-bold fs-4 text-white border-start border-secondary border-opacity-25" style="background-color: rgba(0,0,0,0.25); min-width: 50px;">
               {{ index + 1 }}
             </div>
           </div>
