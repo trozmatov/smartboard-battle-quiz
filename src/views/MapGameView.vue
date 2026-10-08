@@ -63,10 +63,29 @@ function toggleAudio() {
   soundEnabled.value = sound.toggleSound();
 }
 
-function exitToLobby() {
+const showExitModal = ref(false);
+
+function triggerExit() {
   if (!isGameOver.value) {
-    if (!confirm("O'yinni rostan ham to'xtatib, hududlarga qaytmoqchimisiz?")) return;
+    showExitModal.value = true;
+  } else {
+    router.push('/maps');
   }
+}
+
+function confirmExit() {
+  showExitModal.value = false;
+  game.value.status = 'finished'; // Moddatidan avval tugatish (Natijalarni ko'rsatish)
+  stopTimer();
+  if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+  updateScore(regionId, Math.max(game.value.p1.score, game.value.p2.score));
+}
+
+function cancelExit() {
+  showExitModal.value = false;
+}
+
+function exitToLobby() {
   router.push('/maps');
 }
 
@@ -349,7 +368,7 @@ onUnmounted(() => {
           <div class="d-flex gap-2">
             <button @click="handleNextQuestion" class="btn btn-sm btn-outline-light rounded-pill px-3" :disabled="isGameOver" aria-label="Keyingisi">Keyingisi <i class="bi bi-chevron-right"></i></button>
             <button @click="toggleAudio" class="btn btn-sm btn-outline-secondary rounded-circle text-light"><i :class="soundEnabled ? 'bi bi-volume-up-fill' : 'bi bi-volume-mute-fill'"></i></button>
-            <button @click="exitToLobby" class="btn btn-sm btn-outline-danger rounded-circle text-light" title="Hududlarga qaytish"><i class="bi bi-x-lg"></i></button>
+            <button @click="triggerExit" class="btn btn-sm btn-outline-danger rounded-circle text-light" title="Hududlarga qaytish"><i class="bi bi-x-lg"></i></button>
           </div>
         </div>
 
@@ -435,12 +454,29 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
-
+      <!-- Exit Confirmation Modal -->
+      <div v-if="showExitModal" class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center z-3" style="background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);">
+        <div class="card bg-slate-900 border border-danger border-opacity-50 text-white rounded-4 p-4 shadow-2xl animate__animated animate__zoomIn" style="max-width: 400px; width: 90%;">
+          <div class="text-center mb-4">
+            <i class="bi bi-exclamation-triangle text-danger display-4 mb-3 d-block"></i>
+            <h4 class="fw-bold">O'yinni muddatidan avval yakunlamoqchimisiz?</h4>
+            <p class="text-secondary small mb-0">Hozirgacha to'plagan natijalaringiz ko'rsatiladi.</p>
+          </div>
+          <div class="d-flex gap-2">
+            <button @click="cancelExit" class="btn btn-outline-secondary w-50 rounded-pill fw-bold">Davom etish</button>
+            <button @click="confirmExit" class="btn btn-danger w-50 rounded-pill fw-bold">Yakunlash</button>
+          </div>
+        </div>
+      </div>
     </template>
   </div>
 </template>
 
 <style scoped>
+:deep(.leaflet-container) {
+  background-color: #A9D8F5 !important;
+}
+
 .glass-card {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
