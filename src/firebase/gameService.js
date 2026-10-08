@@ -1,13 +1,13 @@
 import { 
   collection, 
   doc, 
-  getDoc, 
   getDocs, 
   addDoc, 
   updateDoc, 
   query, 
   where, 
-  onSnapshot 
+  onSnapshot,
+  increment
 } from 'firebase/firestore';
 import { db } from './config';
 import { toFirestoreData, generatePin, shuffleQuestionsAndOptions } from '../utils/helpers';
@@ -169,29 +169,27 @@ export function subscribeToGame(gameId, callback) {
 }
 
 /**
- * Submits player answer and updates player's score and answered state
+ * Submits player answer and updates player's score and answered state.
+ * Uses a single atomic write (no prior read) so Firestore's local latency
+ * compensation reflects the answer immediately and concurrent answers from
+ * both players cannot overwrite each other's score.
+ *
+ * @param {boolean} [bothAnswered=false] - Caller's knowledge that the other player already answered
  */
-export async function submitPlayerAnswer(gameId, playerKey, selectedIndex, isCorrect, pointsEarned) {
+export async function submitPlayerAnswer(gameId, playerKey, selectedIndex, isCorrect, pointsEarned, bothAnswered = false) {
   try {
     const docRef = doc(db, ACTIVE_GAMES_COLLECTION, gameId);
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) return;
-
-    const game = docSnap.data();
-    const currentScore = game[playerKey]?.score || 0;
-    const newScore = isCorrect ? currentScore + pointsEarned : currentScore;
+    const earned = isCorrect ? (pointsEarned || 0) : 0;
 
     const updatePayload = {
       [`${playerKey}.answeredCurrent`]: true,
       [`${playerKey}.selectedAnswer`]: selectedIndex,
       [`${playerKey}.isCorrect`]: isCorrect,
-      [`${playerKey}.score`]: newScore,
-      [`${playerKey}.lastPointsWon`]: isCorrect ? pointsEarned : 0
+      [`${playerKey}.score`]: increment(earned),
+      [`${playerKey}.lastPointsWon`]: earned
     };
 
-    // Check if other player has already answered
-    const otherKey = playerKey === 'p1' ? 'p2' : 'p1';
-    if (game[otherKey]?.answeredCurrent) {
+    if (bothAnswered) {
       updatePayload.roundEnded = true;
     }
 
@@ -237,12 +235,14 @@ export async function advanceToNextQuestion(gameId, nextIndex, totalQuestions) {
 }
 
 /**
- * Restart the game with the same questions
+ * Restart the game with the same questions.
+ * Optionally persists freshly shuffled per-player question orders so that
+ * every client (and the next snapshot) uses the same order as the board.
  */
-export async function restartGame(gameId) {
+export async function restartGame(gameId, p1Questions = null, p2Questions = null) {
   try {
     const docRef = doc(db, ACTIVE_GAMES_COLLECTION, gameId);
-    await updateDoc(docRef, {
+    const payload = {
       status: 'in_progress',
       currentQuestionIndex: 0,
       roundEnded: false,
@@ -256,7 +256,10 @@ export async function restartGame(gameId) {
       'p2.selectedAnswer': null,
       'p2.isCorrect': null,
       'p2.lastPointsWon': 0
-    });
+    };
+    if (Array.isArray(p1Questions)) payload.p1Questions = toFirestoreData(p1Questions);
+    if (Array.isArray(p2Questions)) payload.p2Questions = toFirestoreData(p2Questions);
+    await updateDoc(docRef, payload);
   } catch (error) {
     console.error('Error restarting game:', error);
     throw error;

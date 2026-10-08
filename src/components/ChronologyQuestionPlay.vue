@@ -30,15 +30,42 @@ const isAnswered = computed(() => playerState.value.answeredCurrent || props.tim
 // It is initialized from question.displayItems.
 const localItems = ref([]);
 
-// Watch for question change to reset local items
-watch(() => props.question, (newQ) => {
-  if (newQ && newQ.type === 'chronology' && newQ.displayItems) {
-    // Clone displayItems for local manipulation
-    localItems.value = JSON.parse(JSON.stringify(newQ.displayItems));
-  } else {
+// Stable identity of the current puzzle. Firestore snapshots recreate the
+// question object on every update (e.g. when the opponent answers), so we must
+// NOT reset on object identity — only when the actual puzzle/round changes.
+const questionKey = computed(() => {
+  const q = props.question;
+  if (!q || q.type !== 'chronology') return '';
+  const ids = (q.displayItems || []).map(i => i.id).join(',');
+  return `${props.game.currentQuestionIndex}|${q.questionText || ''}|${ids}`;
+});
+
+function resetLocalItems() {
+  const q = props.question;
+  if (!q || q.type !== 'chronology' || !q.displayItems) {
     localItems.value = [];
+    return;
   }
-}, { immediate: true, deep: true });
+  const base = JSON.parse(JSON.stringify(q.displayItems));
+  // If this player already submitted (e.g. component re-mounted), show the submitted order
+  const submitted = playerState.value?.answeredCurrent ? playerState.value.selectedAnswer : null;
+  if (Array.isArray(submitted) && submitted.length === base.length) {
+    const byId = new Map(base.map(i => [i.id, i]));
+    const ordered = submitted.map(id => byId.get(id)).filter(Boolean);
+    if (ordered.length === base.length) {
+      localItems.value = ordered;
+      return;
+    }
+  }
+  localItems.value = base;
+}
+
+watch(questionKey, resetLocalItems, { immediate: true });
+
+// New round on the same puzzle (e.g. rematch of a 1-question quiz): answered flag goes true -> false
+watch(() => playerState.value?.answeredCurrent, (now, before) => {
+  if (before && !now) resetLocalItems();
+});
 
 function submitAnswer() {
   if (isAnswered.value) return;

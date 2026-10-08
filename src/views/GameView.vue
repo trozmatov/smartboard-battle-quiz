@@ -103,6 +103,15 @@ const winner = computed(() => {
   return { name: "It's a Tie!", player: 'tie', score: game.value.p1.score };
 });
 
+// Round duration: players have independently shuffled question orders,
+// so use the longer of the two current questions' time limits.
+function getRoundDuration() {
+  return Math.max(
+    p1CurrentQuestion.value?.timeLimit || 15,
+    p2CurrentQuestion.value?.timeLimit || 15
+  );
+}
+
 // Start Countdown Timer
 function startTimer(duration) {
   stopTimer();
@@ -189,7 +198,7 @@ async function handlePlayerSelect(playerKey, optionIndex) {
   // Sync with Firestore if active session exists
   if (gameId.value) {
     try {
-      await submitPlayerAnswer(gameId.value, playerKey, optionIndex, isCorrect, points);
+      await submitPlayerAnswer(gameId.value, playerKey, optionIndex, isCorrect, points, game.value[otherKey].answeredCurrent);
     } catch (err) {
       console.warn('Could not sync answer to Firestore (running locally):', err);
     }
@@ -238,7 +247,7 @@ async function handleChronologySelect(playerKey, submittedOrderIds) {
   // Sync with Firestore if active session exists
   if (gameId.value) {
     try {
-      await submitPlayerAnswer(gameId.value, playerKey, submittedOrderIds, isCorrect, points);
+      await submitPlayerAnswer(gameId.value, playerKey, submittedOrderIds, isCorrect, points, game.value[otherKey].answeredCurrent);
     } catch (err) {
       console.warn('Could not sync answer to Firestore:', err);
     }
@@ -283,11 +292,7 @@ async function handleNextQuestion() {
     advanceToNextQuestion(gameId.value, nextIdx, totalQuestions.value).catch(console.warn);
   }
 
-  const currentDuration = Math.max(
-    p1CurrentQuestion.value?.timeLimit || 15,
-    p2CurrentQuestion.value?.timeLimit || 15
-  );
-  startTimer(currentDuration);
+  startTimer(getRoundDuration());
 }
 
 // Rematch / Restart Game
@@ -311,14 +316,10 @@ async function handleRestartGame() {
   game.value.p2.isCorrect = null;
 
   if (gameId.value) {
-    restartGame(gameId.value).catch(console.warn);
+    restartGame(gameId.value, game.value.p1Questions, game.value.p2Questions).catch(console.warn);
   }
 
-  const currentDuration = Math.max(
-    p1CurrentQuestion.value?.timeLimit || 15,
-    p2CurrentQuestion.value?.timeLimit || 15
-  );
-  startTimer(currentDuration);
+  startTimer(getRoundDuration());
 }
 
 // Confetti Celebration
@@ -364,17 +365,25 @@ onMounted(() => {
   }
 
   if (gameId.value && !gameId.value.startsWith('demo-session-')) {
+    let isFirstSnapshot = true;
     unsubscribeFirestore = subscribeToGame(gameId.value, (remoteGame) => {
       if (remoteGame) {
         const prevIndex = game.value.currentQuestionIndex;
+        const prevStatus = game.value.status;
         game.value = { ...game.value, ...remoteGame };
         
-        // If question advanced by teacher, restart timer
-        if (remoteGame.currentQuestionIndex !== prevIndex && !isGameOver.value) {
-          startTimer(currentQuestion.value?.timeLimit || 15);
+        // Restart timer when the real quiz first arrives (initial render used
+        // sessionStorage/demo data with possibly different time limits) or
+        // when the question was advanced remotely.
+        const indexChanged = remoteGame.currentQuestionIndex !== prevIndex;
+        if ((isFirstSnapshot || indexChanged) && !isGameOver.value && !game.value.roundEnded) {
+          startTimer(getRoundDuration());
         }
+        isFirstSnapshot = false;
 
-        if (remoteGame.status === 'finished') {
+        // Celebrate only on the transition to finished (the board already
+        // celebrated locally if it finished the game itself).
+        if (remoteGame.status === 'finished' && prevStatus !== 'finished') {
           stopTimer();
           triggerConfetti();
           sound.playFanfare();
@@ -385,7 +394,7 @@ onMounted(() => {
 
   // Initial Question Timer Start
   if (currentQuestion.value) {
-    startTimer(currentQuestion.value.timeLimit || 15);
+    startTimer(getRoundDuration());
   }
 });
 
