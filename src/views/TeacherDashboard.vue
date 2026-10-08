@@ -3,6 +3,7 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import SavedQuizzesModal from '../components/SavedQuizzesModal.vue';
 import AiQuizModal from '../components/AiQuizModal.vue';
+import ChronologyQuestionEditor from '../components/ChronologyQuestionEditor.vue';
 import { getQuizzes, saveQuiz, updateQuiz, deleteQuiz, seedDefaultQuizzes, DEFAULT_QUIZZES } from '../firebase/quizService';
 import { createGameSession } from '../firebase/gameService';
 import { sound } from '../utils/sound';
@@ -161,6 +162,7 @@ function openManualCreator() {
   currentQuiz.isAiGenerated = false;
   currentQuiz.questions = [
     {
+      type: 'multiple_choice',
       questionText: '1-savol matnini bu yerga yozing...',
       options: ['Variant A', 'Variant B', 'Variant C', 'Variant D'],
       correctIndex: 0,
@@ -182,7 +184,10 @@ function handleAiQuizGenerated(aiQuiz) {
   currentQuiz.id = null;
   currentQuiz.title = aiQuiz.title || '🤖 AI Generatsiya Test';
   currentQuiz.isAiGenerated = true;
-  currentQuiz.questions = JSON.parse(JSON.stringify(aiQuiz.questions || []));
+  currentQuiz.questions = JSON.parse(JSON.stringify(aiQuiz.questions || [])).map(q => {
+    if (!q.type) q.type = 'multiple_choice';
+    return q;
+  });
   selectedQuestionIndex.value = 0;
   viewMode.value = 'editor';
   sound.playCorrect();
@@ -192,7 +197,10 @@ function openQuizInEditor(quiz) {
   currentQuiz.id = quiz.id;
   currentQuiz.title = quiz.title;
   currentQuiz.isAiGenerated = !!quiz.isAiGenerated;
-  currentQuiz.questions = JSON.parse(JSON.stringify(quiz.questions || []));
+  currentQuiz.questions = JSON.parse(JSON.stringify(quiz.questions || [])).map(q => {
+    if (!q.type) q.type = 'multiple_choice';
+    return q;
+  });
   selectedQuestionIndex.value = 0;
   viewMode.value = 'editor';
   sound.playTick();
@@ -227,6 +235,7 @@ function selectQuestion(idx) {
 
 function addQuestion() {
   currentQuiz.questions.push({
+    type: 'multiple_choice',
     questionText: 'Yangi savol matni',
     options: ['Variant A', 'Variant B', 'Variant C', 'Variant D'],
     correctIndex: 0,
@@ -261,22 +270,43 @@ async function handleSaveQuiz() {
   isSaving.value = true;
   errorMessage.value = '';
   try {
+    // Sanitize data before sending to Firestore
+    // - Remove Vue Proxies
+    // - Explicitly set type to 'multiple_choice' if missing
+    // - Remove any 'undefined' values which Firestore rejects
+    const cleanedQuestions = currentQuiz.questions.map(q => {
+      const qCopy = { ...q };
+      if (!qCopy.type) qCopy.type = 'multiple_choice';
+      return qCopy;
+    });
+    
     const payload = {
       title: currentQuiz.title,
       isAiGenerated: !!currentQuiz.isAiGenerated,
-      questions: currentQuiz.questions
+      questions: JSON.parse(JSON.stringify(cleanedQuestions))
     };
 
     if (currentQuiz.id && !currentQuiz.id.startsWith('template-')) {
       await updateQuiz(currentQuiz.id, payload);
+      
+      // Optimistic Update
+      const idx = allQuizzes.value.findIndex(q => q.id === currentQuiz.id);
+      if (idx !== -1) {
+        allQuizzes.value[idx] = { id: currentQuiz.id, ...payload };
+      }
     } else {
       const res = await saveQuiz(payload);
       currentQuiz.id = res.id;
+      
+      // Optimistic Update
+      allQuizzes.value.unshift(res);
     }
     
     saveSuccessToast.value = true;
     sound.playCorrect();
-    fetchLibraryQuizzes();
+    
+    // Background fetch just to sync
+    fetchLibraryQuizzes().catch(e => console.warn(e));
     
     setTimeout(() => {
       saveSuccessToast.value = false;
@@ -294,8 +324,22 @@ async function handleStartGame(quizToStart = null) {
   isStarting.value = true;
   errorMessage.value = '';
   try {
-    const targetQuiz = quizToStart || currentQuiz;
-    const gameSession = await createGameSession(targetQuiz);
+    let targetQuiz = quizToStart || currentQuiz;
+    
+    // Sanitize before starting (just like when saving)
+    const cleanedQuestions = targetQuiz.questions.map(q => {
+      const qCopy = { ...q };
+      if (!qCopy.type) qCopy.type = 'multiple_choice';
+      return qCopy;
+    });
+    
+    // Create a deeply cloned, clean object
+    const safeQuiz = {
+      ...targetQuiz,
+      questions: JSON.parse(JSON.stringify(cleanedQuestions))
+    };
+
+    const gameSession = await createGameSession(safeQuiz);
     sound.playCorrect();
 
     router.push({
@@ -315,10 +359,12 @@ async function handleStartGame(quizToStart = null) {
   }
 }
 
-onMounted(() => {
-  seedDefaultQuizzes().catch(console.warn);
+onMounted(async () => {
   if (isAuthenticated.value) {
-    fetchLibraryQuizzes();
+    await fetchLibraryQuizzes();
+    if (allQuizzes.value.length === 0) {
+      seedDefaultQuizzes().then(() => fetchLibraryQuizzes()).catch(console.warn);
+    }
   }
 });
 </script>
@@ -902,7 +948,22 @@ onMounted(() => {
                   <h4 class="brand-font text-white mb-0">Savol va Javoblarni Tahrirlash</h4>
                 </div>
 
-                <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center flex-wrap gap-3">
+                  <!-- Question Type -->
+                  <div>
+                    <label class="form-label text-secondary small mb-1 fw-semibold">
+                      <i class="bi bi-ui-radios-grid text-primary me-1"></i> Savol turi
+                    </label>
+                    <select 
+                      v-model="activeQuestion.type" 
+                      class="form-select form-select-sm text-white border-secondary border-opacity-50 rounded-pill px-3"
+                      style="background-color: #0F172A !important; color: #FFFFFF !important;"
+                    >
+                      <option value="multiple_choice">Oddiy (4 ta variant)</option>
+                      <option value="chronology">Xronologik tartib (Puzzle)</option>
+                    </select>
+                  </div>
+
                   <!-- Time Limit -->
                   <div>
                     <label class="form-label text-secondary small mb-1 fw-semibold">
@@ -958,7 +1019,7 @@ onMounted(() => {
               </div>
 
               <!-- Options -->
-              <div>
+              <div v-if="!activeQuestion.type || activeQuestion.type === 'multiple_choice'">
                 <div class="d-flex align-items-center justify-content-between mb-3">
                   <label class="form-label text-light fw-bold fs-5 mb-0">
                     Javob Variantlari va To'g'ri Javob
@@ -1107,6 +1168,12 @@ onMounted(() => {
                   </div>
 
                 </div>
+              </div>
+
+              <!-- Chronology Option Editor -->
+              <div v-else-if="activeQuestion.type === 'chronology'">
+                <ChronologyQuestionEditor v-model:question="activeQuestion" />
+              </div>
 
                 <!-- Scientific / Pedagogical Explanation (Izoh) -->
                 <div class="mt-4 pt-3 border-top border-secondary border-opacity-25">
@@ -1123,8 +1190,6 @@ onMounted(() => {
                     style="background-color: #0F172A !important; color: #FFFFFF !important;"
                   ></textarea>
                 </div>
-
-              </div>
 
             </div>
           </main>

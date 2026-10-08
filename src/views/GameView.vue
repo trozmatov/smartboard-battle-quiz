@@ -11,6 +11,7 @@ import {
 import { DEFAULT_QUIZZES } from '../firebase/quizService';
 import { sound } from '../utils/sound';
 import { shuffleQuestionsAndOptions } from '../utils/helpers';
+import ChronologyQuestionPlay from '../components/ChronologyQuestionPlay.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -191,6 +192,55 @@ async function handlePlayerSelect(playerKey, optionIndex) {
       await submitPlayerAnswer(gameId.value, playerKey, optionIndex, isCorrect, points);
     } catch (err) {
       console.warn('Could not sync answer to Firestore (running locally):', err);
+    }
+  }
+}
+
+async function handleChronologySelect(playerKey, submittedOrderIds) {
+  if (isGameOver.value) return;
+  
+  const player = game.value[playerKey];
+  if (player.answeredCurrent) return; // Prevent double answering
+
+  const targetQuestion = playerKey === 'p1' ? p1CurrentQuestion.value : p2CurrentQuestion.value;
+  if (!targetQuestion || targetQuestion.type !== 'chronology') return;
+
+  const correctOrderIds = targetQuestion.items.map(i => i.id);
+  const isCorrect = JSON.stringify(submittedOrderIds) === JSON.stringify(correctOrderIds);
+  const points = isCorrect ? (targetQuestion.points || 100) : 0;
+
+  // Immediate Local UI Update
+  player.answeredCurrent = true;
+  player.selectedAnswer = submittedOrderIds;
+  player.isCorrect = isCorrect;
+  player.lastPointsWon = points;
+  player.score += points;
+
+  // Sound cue
+  if (isCorrect) {
+    sound.playCorrect();
+  } else {
+    sound.playWrong();
+  }
+
+  // Check if both players have now answered
+  const otherKey = playerKey === 'p1' ? 'p2' : 'p1';
+  if (game.value[otherKey].answeredCurrent) {
+    stopTimer();
+    game.value.roundEnded = true;
+
+    if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+    autoAdvanceTimer = setTimeout(() => {
+      handleNextQuestion();
+    }, 2800); // slightly longer to review puzzle correctly
+  }
+
+  // Sync with Firestore if active session exists
+  if (gameId.value) {
+    try {
+      await submitPlayerAnswer(gameId.value, playerKey, submittedOrderIds, isCorrect, points);
+    } catch (err) {
+      console.warn('Could not sync answer to Firestore:', err);
     }
   }
 }
@@ -532,7 +582,7 @@ onUnmounted(() => {
         </div>
 
         <!-- P1 4 Touch Buttons Grid -->
-        <div v-if="p1CurrentQuestion" class="answers-grid">
+        <div v-if="p1CurrentQuestion && (!p1CurrentQuestion.type || p1CurrentQuestion.type === 'multiple_choice')" class="answers-grid">
           
           <button 
             @click="handlePlayerSelect('p1', 0)"
@@ -592,6 +642,17 @@ onUnmounted(() => {
 
         </div>
 
+        <!-- P1 Chronology Game UI -->
+        <div v-else-if="p1CurrentQuestion && p1CurrentQuestion.type === 'chronology'" class="flex-grow-1 p-3">
+          <ChronologyQuestionPlay 
+            :question="p1CurrentQuestion"
+            :playerKey="'p1'"
+            :game="game"
+            :timeLeft="timeLeft"
+            @submit="handleChronologySelect"
+          />
+        </div>
+
       </section>
 
       <!-- ==================== RIGHT HALF: PLAYER 2 (BLUE) ==================== -->
@@ -636,7 +697,7 @@ onUnmounted(() => {
         </div>
 
         <!-- P2 4 Touch Buttons Grid -->
-        <div v-if="p2CurrentQuestion" class="answers-grid">
+        <div v-if="p2CurrentQuestion && (!p2CurrentQuestion.type || p2CurrentQuestion.type === 'multiple_choice')" class="answers-grid">
           
           <button 
             @click="handlePlayerSelect('p2', 0)"
@@ -694,6 +755,17 @@ onUnmounted(() => {
             <span>{{ p2CurrentQuestion.options[3] }}</span>
           </button>
 
+        </div>
+
+        <!-- P2 Chronology Game UI -->
+        <div v-else-if="p2CurrentQuestion && p2CurrentQuestion.type === 'chronology'" class="flex-grow-1 p-3">
+          <ChronologyQuestionPlay 
+            :question="p2CurrentQuestion"
+            :playerKey="'p2'"
+            :game="game"
+            :timeLeft="timeLeft"
+            @submit="handleChronologySelect"
+          />
         </div>
 
       </section>

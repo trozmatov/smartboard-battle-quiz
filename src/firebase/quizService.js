@@ -8,7 +8,8 @@ import {
   deleteDoc, 
   serverTimestamp,
   query,
-  orderBy
+  orderBy,
+  limit
 } from 'firebase/firestore';
 import { db } from './config';
 import { toFirestoreData } from '../utils/helpers';
@@ -130,7 +131,10 @@ export const DEFAULT_QUIZZES = [
  */
 export async function getQuizzes() {
   try {
-    const q = collection(db, QUIZZES_COLLECTION);
+    const q = query(
+      collection(db, QUIZZES_COLLECTION),
+      limit(50)
+    );
     const snapshot = await getDocs(q);
     const quizzes = [];
     snapshot.forEach(docSnap => {

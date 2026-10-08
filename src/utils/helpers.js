@@ -59,6 +59,27 @@ export function shuffleQuestionsAndOptions(originalQuestions) {
 
   // 2. Shuffle options for every question while preserving the correct answer index
   return shuffledQuestions.map((q) => {
+    // Handling new chronological type
+    if (q.type === 'chronology' && q.items) {
+      let shuffledItems = shuffle([...q.items]);
+      
+      // Ensure the shuffled array is not exactly equal to the correct array
+      let isSame = JSON.stringify(shuffledItems.map(i => i.id)) === JSON.stringify(q.items.map(i => i.id));
+      let attempts = 0;
+      while (isSame && attempts < 10) {
+        shuffledItems = shuffle([...shuffledItems]);
+        isSame = JSON.stringify(shuffledItems.map(i => i.id)) === JSON.stringify(q.items.map(i => i.id));
+        attempts++;
+      }
+      
+      // Return question with a new displayItems array used for rendering the puzzle
+      return {
+        ...q,
+        displayItems: shuffledItems
+      };
+    }
+
+    // Default legacy handling (multiple choice)
     const originalCorrectText = q.options[q.correctIndex];
     const newOptions = shuffle([...q.options]);
     const newCorrectIndex = newOptions.indexOf(originalCorrectText);

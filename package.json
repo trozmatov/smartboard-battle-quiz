@@ -17,7 +17,8 @@
     "leaflet": "^1.9.4",
     "pdfjs-dist": "^6.4.299",
     "vue": "^3.4.21",
-    "vue-router": "^4.3.0"
+    "vue-router": "^4.3.0",
+    "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.9",
