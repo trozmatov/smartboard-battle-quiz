@@ -149,9 +149,9 @@ function initMaps() {
 
 function getBaseStyle() {
   return { 
-    color: '#64748B', // Lighter slate for clear borders
-    weight: 1.5,      // Slightly thicker border for readability
-    fillColor: '#1E293B', // Slate-800 for land (contrasts with Slate-950 background)
+    color: '#82A3C4', // Clear, light blueish border to match classic physical maps
+    weight: 1.5,
+    fillColor: '#FFFFFF', // White landmass
     fillOpacity: 1 
   };
 }
@@ -366,7 +366,7 @@ onUnmounted(() => {
       <main v-if="!isGameOver" class="split-arena d-flex flex-column flex-md-row" style="height: calc(100dvh - 60px);">
         
         <!-- PLAYER 1 (Left/Top) -->
-        <section class="player-half flex-grow-1 position-relative border-end border-secondary border-opacity-50" style="background-color: #020617;">
+        <section class="player-half flex-grow-1 position-relative border-end border-secondary border-opacity-50" style="background-color: #A9D8F5;">
           <div class="position-absolute top-0 start-50 translate-middle-x mt-3 z-3 w-75 text-center" style="pointer-events: none;">
             <div class="glass-card px-4 py-2 rounded-pill border border-warning shadow-lg d-inline-block" style="background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);">
               <span class="text-warning small text-uppercase fw-bold d-block mb-1">Topishingiz kerak:</span>
@@ -382,7 +382,7 @@ onUnmounted(() => {
         </section>
 
         <!-- PLAYER 2 (Right/Bottom) -->
-        <section class="player-half flex-grow-1 position-relative" style="background-color: #020617;">
+        <section class="player-half flex-grow-1 position-relative" style="background-color: #A9D8F5;">
           <div class="position-absolute top-0 start-50 translate-middle-x mt-3 z-3 w-75 text-center" style="pointer-events: none;">
             <div class="glass-card px-4 py-2 rounded-pill border border-info shadow-lg d-inline-block" style="background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);">
               <span class="text-info small text-uppercase fw-bold d-block mb-1">Topishingiz kerak:</span>
