@@ -246,6 +246,26 @@ function addQuestion() {
   sound.playTick();
 }
 
+function applyTimeToAll() {
+  if (!activeQuestion.value) return;
+  const t = activeQuestion.value.timeLimit;
+  currentQuiz.questions.forEach(q => {
+    q.timeLimit = t;
+  });
+  sound.playCorrect();
+  alert(`Vaqt (${t} soniya) barcha ${currentQuiz.questions.length} ta savolga muvaffaqiyatli o'rnatildi.`);
+}
+
+function applyPointsToAll() {
+  if (!activeQuestion.value) return;
+  const p = activeQuestion.value.points;
+  currentQuiz.questions.forEach(q => {
+    q.points = p;
+  });
+  sound.playCorrect();
+  alert(`Ball (${p}) barcha ${currentQuiz.questions.length} ta savolga muvaffaqiyatli o'rnatildi.`);
+}
+
 function duplicateQuestion(idx) {
   const cloned = JSON.parse(JSON.stringify(currentQuiz.questions[idx]));
   cloned.questionText += ' (Nusxa)';
@@ -286,7 +306,7 @@ async function handleSaveQuiz() {
       questions: JSON.parse(JSON.stringify(cleanedQuestions))
     };
 
-    if (currentQuiz.id && !currentQuiz.id.startsWith('template-')) {
+    if (currentQuiz.id && !currentQuiz.id.startsWith('template-') && !currentQuiz.id.startsWith('temp-')) {
       // Optimistic Update
       const idx = allQuizzes.value.findIndex(q => q.id === currentQuiz.id);
       if (idx !== -1) {
@@ -312,6 +332,10 @@ async function handleSaveQuiz() {
         if (idx !== -1) allQuizzes.value[idx].id = res.id;
       }).catch(err => {
         errorMessage.value = 'Orqa fonda saqlashda xatolik: ' + err.message;
+        // Revert temp ID so user can try saving as new again
+        if (currentQuiz.id === tempId) {
+          currentQuiz.id = null;
+        }
       });
     }
     
@@ -976,8 +1000,9 @@ onMounted(async () => {
 
                   <!-- Time Limit -->
                   <div>
-                    <label class="form-label text-secondary small mb-1 fw-semibold">
-                      <i class="bi bi-stopwatch text-info me-1"></i> Vaqt
+                    <label class="form-label text-secondary small mb-1 fw-semibold d-flex justify-content-between align-items-center w-100">
+                      <span><i class="bi bi-stopwatch text-info me-1"></i> Vaqt</span>
+                      <button @click="applyTimeToAll" class="btn btn-outline-info px-2 py-0 border-0 rounded-pill" style="font-size: 0.7rem; background: rgba(13,202,240,0.1);" title="Barcha savollarga qo'llash">Barchasiga</button>
                     </label>
                     <select 
                       v-model.number="activeQuestion.timeLimit" 
@@ -995,8 +1020,9 @@ onMounted(async () => {
 
                   <!-- Points -->
                   <div>
-                    <label class="form-label text-secondary small mb-1 fw-semibold">
-                      <i class="bi bi-star-fill text-warning me-1"></i> Ball
+                    <label class="form-label text-secondary small mb-1 fw-semibold d-flex justify-content-between align-items-center w-100">
+                      <span><i class="bi bi-star-fill text-warning me-1"></i> Ball</span>
+                      <button @click="applyPointsToAll" class="btn btn-outline-warning px-2 py-0 border-0 rounded-pill" style="font-size: 0.7rem; background: rgba(255,193,7,0.1);" title="Barcha savollarga qo'llash">Barchasiga</button>
                     </label>
                     <select 
                       v-model.number="activeQuestion.points" 
