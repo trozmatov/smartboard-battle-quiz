@@ -287,26 +287,37 @@ async function handleSaveQuiz() {
     };
 
     if (currentQuiz.id && !currentQuiz.id.startsWith('template-')) {
-      await updateQuiz(currentQuiz.id, payload);
-      
       // Optimistic Update
       const idx = allQuizzes.value.findIndex(q => q.id === currentQuiz.id);
       if (idx !== -1) {
         allQuizzes.value[idx] = { id: currentQuiz.id, ...payload };
       }
+      
+      // Async background update
+      updateQuiz(currentQuiz.id, payload).catch(err => {
+        errorMessage.value = 'Orqa fonda saqlashda xatolik: ' + err.message;
+      });
+      
     } else {
-      const res = await saveQuiz(payload);
-      currentQuiz.id = res.id;
+      const tempId = 'temp-' + Date.now();
+      currentQuiz.id = tempId;
       
       // Optimistic Update
-      allQuizzes.value.unshift(res);
+      allQuizzes.value.unshift({ id: tempId, ...payload });
+      
+      // Async background save
+      saveQuiz(payload).then(res => {
+        currentQuiz.id = res.id;
+        const idx = allQuizzes.value.findIndex(q => q.id === tempId);
+        if (idx !== -1) allQuizzes.value[idx].id = res.id;
+      }).catch(err => {
+        errorMessage.value = 'Orqa fonda saqlashda xatolik: ' + err.message;
+      });
     }
     
     saveSuccessToast.value = true;
     sound.playCorrect();
-    
-    // Background fetch just to sync
-    fetchLibraryQuizzes().catch(e => console.warn(e));
+    isSaving.value = false; // unlock UI instantly!
     
     setTimeout(() => {
       saveSuccessToast.value = false;
@@ -315,7 +326,6 @@ async function handleSaveQuiz() {
     console.error('Error saving quiz:', err);
     errorMessage.value = 'Saqlashda xatolik: ' + err.message;
     sound.playWrong();
-  } finally {
     isSaving.value = false;
   }
 }

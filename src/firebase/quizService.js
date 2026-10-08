@@ -131,10 +131,7 @@ export const DEFAULT_QUIZZES = [
  */
 export async function getQuizzes() {
   try {
-    const q = query(
-      collection(db, QUIZZES_COLLECTION),
-      limit(50)
-    );
+    const q = collection(db, QUIZZES_COLLECTION);
     const snapshot = await getDocs(q);
     const quizzes = [];
     snapshot.forEach(docSnap => {
@@ -142,6 +139,13 @@ export async function getQuizzes() {
         id: docSnap.id,
         ...docSnap.data()
       });
+    });
+    
+    // Sort in memory to ensure newest are first, without breaking older quizzes that lack updatedAt
+    quizzes.sort((a, b) => {
+      const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+      const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+      return dateB - dateA;
     });
     
     // If no quizzes saved in Firestore yet, provide the starter templates
