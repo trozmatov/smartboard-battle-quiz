@@ -199,6 +199,8 @@ function openQuizInEditor(quiz) {
   currentQuiz.isAiGenerated = !!quiz.isAiGenerated;
   currentQuiz.questions = JSON.parse(JSON.stringify(quiz.questions || [])).map(q => {
     if (!q.type) q.type = 'multiple_choice';
+    if (q.timeLimit === undefined) q.timeLimit = 15;
+    if (q.points === undefined) q.points = 100;
     return q;
   });
   selectedQuestionIndex.value = 0;
@@ -248,7 +250,7 @@ function addQuestion() {
 
 function applyTimeToAll() {
   if (!activeQuestion.value) return;
-  const t = activeQuestion.value.timeLimit;
+  const t = activeQuestion.value.timeLimit || 15;
   currentQuiz.questions.forEach(q => {
     q.timeLimit = t;
   });
@@ -258,7 +260,7 @@ function applyTimeToAll() {
 
 function applyPointsToAll() {
   if (!activeQuestion.value) return;
-  const p = activeQuestion.value.points;
+  const p = activeQuestion.value.points || 100;
   currentQuiz.questions.forEach(q => {
     q.points = p;
   });
@@ -1005,7 +1007,7 @@ onMounted(async () => {
                       <button @click="applyTimeToAll" class="btn btn-outline-info px-2 py-0 border-0 rounded-pill" style="font-size: 0.7rem; background: rgba(13,202,240,0.1);" title="Barcha savollarga qo'llash">Barchasiga</button>
                     </label>
                     <select 
-                      v-model.number="activeQuestion.timeLimit" 
+                      v-model.number="currentQuiz.questions[selectedQuestionIndex].timeLimit" 
                       class="form-select form-select-sm text-white border-secondary border-opacity-50 rounded-pill"
                       style="background-color: #0F172A !important; color: #FFFFFF !important;"
                     >
@@ -1027,7 +1029,7 @@ onMounted(async () => {
                       <button @click="applyPointsToAll" class="btn btn-outline-warning px-2 py-0 border-0 rounded-pill" style="font-size: 0.7rem; background: rgba(255,193,7,0.1);" title="Barcha savollarga qo'llash">Barchasiga</button>
                     </label>
                     <select 
-                      v-model.number="activeQuestion.points" 
+                      v-model.number="currentQuiz.questions[selectedQuestionIndex].points" 
                       class="form-select form-select-sm text-white border-secondary border-opacity-50 rounded-pill"
                       style="background-color: #0F172A !important; color: #FFFFFF !important;"
                     >
@@ -1210,7 +1212,10 @@ onMounted(async () => {
 
               <!-- Chronology Option Editor -->
               <div v-else-if="activeQuestion.type === 'chronology'">
-                <ChronologyQuestionEditor v-model:question="activeQuestion" />
+                <ChronologyQuestionEditor 
+                  :question="currentQuiz.questions[selectedQuestionIndex]" 
+                  @update:question="(newQ) => currentQuiz.questions[selectedQuestionIndex] = newQ" 
+                />
               </div>
 
                 <!-- Scientific / Pedagogical Explanation (Izoh) -->
