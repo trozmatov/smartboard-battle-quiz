@@ -7,7 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import { sound } from '../utils/sound';
 import { useDeviceMode } from '../composables/useDeviceMode';
 import { useMapScores } from '../composables/useMapScores';
-import { fetchWorldGeoJSON, generateMapQuestions, UZ_COUNTRIES, REGIONS_CONFIG, getRegionBounds } from '../services/mapQuizService';
+import { fetchGeoJSONForRegion, generateMapQuestions, UZ_COUNTRIES, UZ_REGIONS, REGIONS_CONFIG, getRegionBounds } from '../services/mapQuizService';
 
 const router = useRouter();
 const route = useRoute();
@@ -96,7 +96,7 @@ async function initGame() {
   }
 
   isLoading.value = true;
-  geoJsonData.value = await fetchWorldGeoJSON();
+  geoJsonData.value = await fetchGeoJSONForRegion(regionId);
   if (!geoJsonData.value) {
     alert("Xarita yuklanmadi. Internetni tekshiring.");
     router.push('/maps');
@@ -127,25 +127,29 @@ async function initGame() {
 }
 
 function initMaps() {
+  const isUzbekistan = regionId === 'uzbekistan';
   const mapOptions = {
     attributionControl: false,
     zoomControl: false, // will handle via touch/scroll
-    minZoom: 1,
-    maxZoom: 6,
-    maxBounds: [[-90, -180], [90, 180]]
+    minZoom: isUzbekistan ? 5 : 1,
+    maxZoom: isUzbekistan ? 10 : 6,
+    maxBounds: isUzbekistan 
+      ? [[34.0, 52.0], [48.0, 76.0]] 
+      : [[-90, -180], [90, 180]]
   };
 
   const bounds = getRegionBounds(geoJsonData.value, regionId);
 
   if (p1MapContainer.value && !p1Map) {
     p1Map = L.map(p1MapContainer.value, mapOptions);
-    if (bounds) p1Map.fitBounds(bounds, { padding: [10, 10] });
+    if (bounds) p1Map.fitBounds(bounds, { padding: [15, 15] });
     else p1Map.setView([20, 0], 2);
 
     p1GeoLayer = L.geoJSON(geoJsonData.value, {
       style: getBaseStyle,
       onEachFeature: (f, l) => {
-        p1Layers[f.properties.name] = l;
+        const key = f.properties.name || f.properties.name_uz || f.properties.ADM1_UZ;
+        p1Layers[key] = l;
         l.on('click', () => handleMapClick('p1', f));
       }
     }).addTo(p1Map);
@@ -153,13 +157,14 @@ function initMaps() {
 
   if (p2MapContainer.value && !p2Map) {
     p2Map = L.map(p2MapContainer.value, mapOptions);
-    if (bounds) p2Map.fitBounds(bounds, { padding: [10, 10] });
+    if (bounds) p2Map.fitBounds(bounds, { padding: [15, 15] });
     else p2Map.setView([20, 0], 2);
 
     p2GeoLayer = L.geoJSON(geoJsonData.value, {
       style: getBaseStyle,
       onEachFeature: (f, l) => {
-        p2Layers[f.properties.name] = l;
+        const key = f.properties.name || f.properties.name_uz || f.properties.ADM1_UZ;
+        p2Layers[key] = l;
         l.on('click', () => handleMapClick('p2', f));
       }
     }).addTo(p2Map);
@@ -167,9 +172,10 @@ function initMaps() {
 }
 
 function getBaseStyle() {
+  const isUzbekistan = regionId === 'uzbekistan';
   return { 
-    color: '#82A3C4', // Clear, light blueish border to match classic physical maps
-    weight: 1.5,
+    color: isUzbekistan ? '#059669' : '#82A3C4', // Emerald border for UZ, blueish for world
+    weight: isUzbekistan ? 2 : 1.5,
     fillColor: '#FFFFFF', // White landmass
     fillOpacity: 1 
   };
@@ -233,13 +239,13 @@ function handleMapClick(playerKey, feature) {
   const question = playerKey === 'p1' ? p1CurrentQuestion.value : p2CurrentQuestion.value;
   if (!question) return;
 
-  const clickedName = feature.properties.name;
+  const clickedName = feature.properties.name || feature.properties.name_uz || feature.properties.ADM1_UZ;
   const targetName = question.targetCountryName;
   const isCorrect = clickedName === targetName;
   
   player.answeredCurrent = true;
   player.isCorrect = isCorrect;
-  player.clickedName = UZ_COUNTRIES[clickedName]?.uz || clickedName;
+  player.clickedName = UZ_REGIONS[clickedName]?.uz || UZ_COUNTRIES[clickedName]?.uz || clickedName;
   
   if (isCorrect) {
     player.score += question.points;
@@ -387,9 +393,13 @@ onUnmounted(() => {
         <!-- PLAYER 1 (Left/Top) -->
         <section class="player-half flex-grow-1 position-relative border-end border-secondary border-opacity-50" style="background-color: #A9D8F5;">
           <div class="position-absolute top-0 start-50 translate-middle-x mt-3 z-3 w-75 text-center" style="pointer-events: none;">
-            <div class="glass-card px-4 py-2 rounded-pill border border-warning shadow-lg d-inline-block" style="background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);">
+            <div class="glass-card px-4 py-2 rounded-4 border border-warning shadow-lg d-inline-block" style="background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(8px);">
               <span class="text-warning small text-uppercase fw-bold d-block mb-1">Topishingiz kerak:</span>
               <h3 class="text-white mb-0 px-3">{{ p1CurrentQuestion?.targetCountryUz }}</h3>
+              <div v-if="p1CurrentQuestion?.capital" class="text-warning text-opacity-75 small mt-1">
+                <span v-if="p1CurrentQuestion.capital !== 'Poytaxt'"><i class="bi bi-geo-alt-fill me-1"></i>Markazi: {{ p1CurrentQuestion.capital }}</span>
+                <span v-else><i class="bi bi-star-fill me-1"></i>{{ p1CurrentQuestion.hint }}</span>
+              </div>
             </div>
             
             <div v-if="game.p1.answeredCurrent" class="mt-2 animate__animated animate__fadeIn">
@@ -403,9 +413,13 @@ onUnmounted(() => {
         <!-- PLAYER 2 (Right/Bottom) -->
         <section class="player-half flex-grow-1 position-relative" style="background-color: #A9D8F5;">
           <div class="position-absolute top-0 start-50 translate-middle-x mt-3 z-3 w-75 text-center" style="pointer-events: none;">
-            <div class="glass-card px-4 py-2 rounded-pill border border-info shadow-lg d-inline-block" style="background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);">
+            <div class="glass-card px-4 py-2 rounded-4 border border-info shadow-lg d-inline-block" style="background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(8px);">
               <span class="text-info small text-uppercase fw-bold d-block mb-1">Topishingiz kerak:</span>
               <h3 class="text-white mb-0 px-3">{{ p2CurrentQuestion?.targetCountryUz }}</h3>
+              <div v-if="p2CurrentQuestion?.capital" class="text-info text-opacity-75 small mt-1">
+                <span v-if="p2CurrentQuestion.capital !== 'Poytaxt'"><i class="bi bi-geo-alt-fill me-1"></i>Markazi: {{ p2CurrentQuestion.capital }}</span>
+                <span v-else><i class="bi bi-star-fill me-1"></i>{{ p2CurrentQuestion.hint }}</span>
+              </div>
             </div>
             
             <div v-if="game.p2.answeredCurrent" class="mt-2 animate__animated animate__fadeIn">

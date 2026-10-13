@@ -185,7 +185,41 @@ export const UZ_COUNTRIES = {
   "Vanuatu": { uz: "Vanuatu", region: "oceania", subRegion: "main" }
 };
 
+export const UZ_REGIONS = {
+  "Toshkent shahri": { uz: "Toshkent shahri", capital: "Poytaxt", subRegion: "markaz", hint: "O'zbekiston Respublikasi poytaxti" },
+  "Andijon viloyati": { uz: "Andijon viloyati", capital: "Andijon shahri", subRegion: "vodiy", hint: "Zahiriddin Muhammad Bobur tavallud topgan viloyat" },
+  "Farg'ona viloyati": { uz: "Farg'ona viloyati", capital: "Farg'ona shahri", subRegion: "vodiy", hint: "Qo'qon xonligi o'rdasi joylashgan voha" },
+  "Namangan viloyati": { uz: "Namangan viloyati", capital: "Namangan shahri", subRegion: "vodiy", hint: "Gullar shahri va qadimiy Axsikent" },
+  "Toshkent viloyati": { uz: "Toshkent viloyati", capital: "Nurafshon shahri", subRegion: "markaz", hint: "Chorvoq suv ombori va Chimyon tog'lari" },
+  "Sirdaryo viloyati": { uz: "Sirdaryo viloyati", capital: "Guliston shahri", subRegion: "markaz", hint: "Mirzacho'l kengliklari va Sirdaryo daryosi bo'ylari" },
+  "Jizzax viloyati": { uz: "Jizzax viloyati", capital: "Jizzax shahri", subRegion: "markaz", hint: "Zomin tog'lari va milliy bog'i" },
+  "Samarqand viloyati": { uz: "Samarqand viloyati", capital: "Samarqand shahri", subRegion: "markaz", hint: "Registon maydoni, Bibixonim va Amir Temur maqbarasi" },
+  "Buxoro viloyati": { uz: "Buxoro viloyati", capital: "Buxoro shahri", subRegion: "garb", hint: "Ark qal'asi, Minorai Kalon va qadimiy Buxoro" },
+  "Navoiy viloyati": { uz: "Navoiy viloyati", capital: "Navoiy shahri", subRegion: "garb", hint: "Qizilqum kengliklari va yirik sanoat markazi" },
+  "Qashqadaryo viloyati": { uz: "Qashqadaryo viloyati", capital: "Qarshi shahri", subRegion: "janub", hint: "Amir Temur tavallud topgan Shahrisabz va Qarshi" },
+  "Surxondaryo viloyati": { uz: "Surxondaryo viloyati", capital: "Termiz shahri", subRegion: "janub", hint: "Termiziy allomalar yurti va eng janubiy viloyat" },
+  "Xorazm viloyati": { uz: "Xorazm viloyati", capital: "Urganch shahri", subRegion: "garb", hint: "Ichan-Qal'a, qadimiy Xiva va Al-Xorazmiy vatani" },
+  "Qoraqalpog'iston Respublikasi": { uz: "Qoraqalpog'iston Respublikasi", capital: "Nukus shahri", subRegion: "garb", hint: "Savitskiy muzeyi, Orol dengizi havzasi va Ustyurt" }
+};
+
 export const REGIONS_CONFIG = [
+  { 
+    id: 'uzbekistan', 
+    name: "O'zbekiston", 
+    desc: "O'zbekiston Respublikasi viloyatlari, poytaxt Toshkent va Qoraqalpog'iston.", 
+    icon: '🇺🇿', 
+    mapIcon: 'bi-geo-alt-fill', 
+    bg: '#059669', 
+    total: 14,
+    unitName: 'hudud',
+    subRegions: [
+      { id: 'all', name: "Barcha hududlar (14 ta)" },
+      { id: 'vodiy', name: "Farg'ona vodiysi (Andijon, Farg'ona, Namangan)" },
+      { id: 'markaz', name: "Markaziy hudud (Toshkent, Sirdaryo, Jizzax, Samarqand)" },
+      { id: 'janub', name: "Janubiy hudud (Qashqadaryo, Surxondaryo)" },
+      { id: 'garb', name: "G'arbiy hudud (Buxoro, Navoiy, Xorazm, Qoraqalpog'iston)" }
+    ]
+  },
   { 
     id: 'world', name: 'Butun Dunyo', desc: 'Barcha qit\'alardagi davlatlar aralashmasi.', icon: '🌍', mapIcon: 'bi-globe-americas', bg: '#475569', total: 130 
   },
@@ -267,7 +301,58 @@ export async function fetchWorldGeoJSON() {
   }
 }
 
+export async function fetchGeoJSONForRegion(regionId = 'world') {
+  if (regionId === 'uzbekistan') {
+    try {
+      const basePath = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/';
+      const cleanBase = basePath.endsWith('/') ? basePath : `${basePath}/`;
+      const res = await fetch(`${cleanBase}data/uzbekistan_regions.json`);
+      if (!res.ok) throw new Error('Failed to fetch Uzbekistan GeoJSON');
+      return await res.json();
+    } catch (err) {
+      console.error("O'zbekiston xaritasi ma'lumotlarini yuklashda xatolik:", err);
+      return null;
+    }
+  }
+  return await fetchWorldGeoJSON();
+}
+
 export function generateMapQuestions(allFeatures, count = 10, region = 'world', subRegion = 'all') {
+  // Uzbekistan mode
+  if (region === 'uzbekistan') {
+    let candidates = allFeatures.filter(f => {
+      const rName = f.properties.name || f.properties.name_uz || f.properties.ADM1_UZ;
+      if (!rName) return false;
+      const rData = UZ_REGIONS[rName] || (f.properties.subRegion ? f.properties : null);
+      if (!rData) return false;
+      
+      if (subRegion !== 'all' && (rData.subRegion !== subRegion && f.properties.subRegion !== subRegion)) {
+        return false;
+      }
+      return true;
+    });
+
+    for (let i = candidates.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+    }
+
+    const maxCount = count === 'all' ? candidates.length : Math.min(count, candidates.length);
+
+    return candidates.slice(0, maxCount).map(feature => {
+      const name = feature.properties.name || feature.properties.name_uz || feature.properties.ADM1_UZ;
+      const meta = UZ_REGIONS[name] || {};
+      return {
+        targetCountryName: name,
+        targetCountryUz: meta.uz || name,
+        capital: feature.properties.capital || meta.capital || '',
+        hint: feature.properties.hint || meta.hint || '',
+        points: 100,
+        timeLimit: 20
+      };
+    });
+  }
+
   // Filter out microstates and non-mapped countries
   let candidates = allFeatures.filter(f => {
     const cName = f.properties.name;
@@ -303,6 +388,10 @@ export function generateMapQuestions(allFeatures, count = 10, region = 'world', 
 export function getRegionBounds(geoJsonData, region) {
   // Hardcoded bounds for cleaner zoom levels (avoiding overseas territories and antimeridian issues)
   const REGION_BOUNDS = {
+    'uzbekistan': [
+      [37.0, 55.9], // Janubi-g'arb (Termiz / Turkmaniston chegarasi)
+      [45.7, 73.2]  // Shimoli-sharq (Orol / Andijon sharqi)
+    ],
     'asia': [
       [-10, 35],   // SouthWest
       [70, 145]    // NorthEast
@@ -331,3 +420,4 @@ export function getRegionBounds(geoJsonData, region) {
 
   return REGION_BOUNDS[region] || null;
 }
+

@@ -77,7 +77,7 @@ function startGame() {
                 <div class="text-end">
                   <span class="badge rounded-pill px-3 py-2 fw-semibold shadow-sm" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(4px);">
                     <i class="bi bi-pin-map-fill me-1" :style="`color: ${region.bg};`"></i>
-                    {{ region.total }} davlat
+                    {{ region.total }} {{ region.unitName || 'davlat' }}
                   </span>
                 </div>
               </div>
@@ -133,10 +133,11 @@ function startGame() {
           <div class="mb-4">
             <label class="form-label text-info fw-bold">Topshiriqlar soni</label>
             <select v-model="questionLimit" class="form-select form-select-lg bg-slate-900 text-white border-secondary">
+              <option v-if="selectedRegion.id === 'uzbekistan'" :value="5">5 ta savol</option>
               <option :value="10">10 ta savol</option>
-              <option :value="15">15 ta savol</option>
-              <option :value="20">20 ta savol</option>
-              <option :value="'all'">Barchasi</option>
+              <option v-if="selectedRegion.id !== 'uzbekistan'" :value="15">15 ta savol</option>
+              <option v-if="selectedRegion.id !== 'uzbekistan'" :value="20">20 ta savol</option>
+              <option :value="'all'">Barchasi ({{ selectedRegion.total }})</option>
             </select>
           </div>
 
