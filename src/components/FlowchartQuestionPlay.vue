@@ -25,7 +25,7 @@ const props = defineProps({
 const emit = defineEmits(['submit']);
 
 const playerState = computed(() => props.game[props.playerKey]);
-const isAnswered = computed(() => playerState.value?.answeredCurrent || props.timeLeft === 0 || props.game?.roundEnded);
+const isAnswered = computed(() => !!playerState.value?.answeredCurrent || !!props.game?.roundEnded);
 
 // Placed cards mapping: { [nodeId]: cardObject }
 const placedCards = ref({});
@@ -270,7 +270,26 @@ const rootNode = computed(() => {
   return explicitRoot || nodes[0];
 });
 
+// Pre-indexed children map for O(1) instant child lookups
+const childrenMap = computed(() => {
+  const map = {};
+  const nodes = props.question.nodes || [];
+  const rootId = rootNode.value?.id;
+  for (const node of nodes) {
+    if (node.id === rootId) continue;
+    const pId = (node.parentId === undefined) ? rootId : node.parentId;
+    if (pId) {
+      if (!map[pId]) map[pId] = [];
+      map[pId].push(node);
+    }
+  }
+  return map;
+});
+
 function getChildren(parentNodeId) {
+  if (childrenMap.value && childrenMap.value[parentNodeId]) {
+    return childrenMap.value[parentNodeId];
+  }
   const nodes = props.question.nodes || [];
   const rootId = rootNode.value?.id;
 
@@ -292,7 +311,7 @@ function getNodeStatus(node) {
   return placed.nodeId === node.id ? 'correct' : 'wrong';
 }
 
-// Dynamic styling for Linear, Cycle, and Hierarchy nodes matching Oltin Sulola
+// Dynamic styling for Linear, Cycle, and Hierarchy nodes matching Oltin Sulola (lightweight hex)
 function getNodeCardStyle(node, idx) {
   const genStyle = getGenerationStyle(idx);
   const isFilled = node.isBlank && placedCards.value[node.id];
@@ -302,39 +321,39 @@ function getNodeCardStyle(node, idx) {
     const status = getNodeStatus(node);
     if (status === 'correct') {
       return {
-        background: 'linear-gradient(135deg, rgba(6, 78, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
+        background: '#064E3B',
         borderColor: '#10B981',
-        boxShadow: '0 0 20px rgba(16, 185, 129, 0.65)'
+        boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)'
       };
     } else {
       return {
-        background: 'linear-gradient(135deg, rgba(127, 29, 29, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
+        background: '#7F1D1D',
         borderColor: '#EF4444',
-        boxShadow: '0 0 20px rgba(239, 68, 68, 0.65)'
+        boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)'
       };
     }
   }
 
   if (isTarget) {
     return {
-      background: 'radial-gradient(circle at center, rgba(245, 158, 11, 0.2) 0%, rgba(15, 23, 42, 0.95) 100%)',
-      borderColor: '#F59E0B',
-      boxShadow: '0 0 20px rgba(245, 158, 11, 0.8)'
+      background: '#1E293B',
+      borderColor: '#FACC15',
+      boxShadow: '0 0 10px rgba(250, 204, 21, 0.5)'
     };
   }
 
   if (node.isBlank && !isFilled) {
     return {
-      background: 'radial-gradient(circle at center, rgba(245, 158, 11, 0.08) 0%, rgba(15, 23, 42, 0.95) 100%)',
+      background: '#0F172A',
       borderColor: '#F59E0B',
-      boxShadow: '0 0 12px rgba(245, 158, 11, 0.25)'
+      boxShadow: 'none'
     };
   }
 
   return {
     background: genStyle.bg,
     borderColor: genStyle.border,
-    boxShadow: `0 0 15px ${genStyle.glow}, inset 0 1px 0 rgba(255, 255, 255, 0.15)`
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.35)'
   };
 }
 </script>
@@ -345,7 +364,7 @@ function getNodeCardStyle(node, idx) {
     <!-- Top Bar: Instruction & Zoom Controls -->
     <div 
       class="alert py-1 px-3 small fw-bold shadow-sm d-flex justify-content-between align-items-center mb-1"
-      style="background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px); border: 1px solid rgba(245, 158, 11, 0.3); color: #E2E8F0;"
+      style="background: #111C33; border: 1px solid rgba(245, 158, 11, 0.3); color: #E2E8F0;"
     >
       <div class="d-flex align-items-center gap-2">
         <i class="bi bi-hand-index-thumb text-warning fs-5"></i>
@@ -403,7 +422,7 @@ function getNodeCardStyle(node, idx) {
     <div 
       v-if="question.layout === 'branching'" 
       class="dynasty-legend d-flex align-items-center gap-1 overflow-auto py-1 px-3 mb-2 rounded-pill border border-warning border-opacity-25 shadow-sm"
-      style="background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);"
+      style="background: #0F172A;"
     >
       <span class="small fw-bold text-warning font-monospace text-nowrap me-1">
         <i class="bi bi-crown-fill text-warning me-1"></i> Shajara:
@@ -432,9 +451,9 @@ function getNodeCardStyle(node, idx) {
       >
         <!-- SCALED VIEWPORT WRAPPER -->
         <div 
-          class="diagram-viewport d-flex justify-content-center transition-all"
+          class="diagram-viewport d-flex justify-content-center"
           :style="{ 
-            transform: `scale(${zoomLevel})`, 
+            transform: `scale(${zoomLevel}) translateZ(0)`, 
             transformOrigin: 'top center',
             minWidth: 'max-content',
             paddingBottom: '40px'
@@ -517,6 +536,7 @@ function getNodeCardStyle(node, idx) {
               v-if="rootNode"
               :node="rootNode"
               :all-nodes="question.nodes"
+              :children-map="childrenMap"
               :is-root="true"
               :is-answered="isAnswered"
               :placed-cards="placedCards"
@@ -671,7 +691,7 @@ function getNodeCardStyle(node, idx) {
           'side-dock-bank': useSideDock,
           'w-100 mt-2': !useSideDock
         }"
-        style="background: radial-gradient(circle at top, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.98)); border-color: rgba(245, 158, 11, 0.35) !important; box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);"
+        style="background: #111827; border-color: rgba(245, 158, 11, 0.35) !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);"
       >
         <div class="d-flex align-items-center justify-content-between mb-2 px-1">
           <span class="small fw-bold text-warning text-uppercase tracking-wider d-flex align-items-center gap-1">
@@ -741,9 +761,15 @@ function getNodeCardStyle(node, idx) {
 }
 
 .diagram-container {
-  background: radial-gradient(circle at 50% 15%, rgba(245, 158, 11, 0.08) 0%, rgba(15, 23, 42, 0.98) 75%);
+  background: #0B1120;
   border: 1px solid rgba(245, 158, 11, 0.25);
-  box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.7);
+  scrollbar-width: thin;
+}
+
+.diagram-viewport {
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* Side dock card bank */
@@ -755,10 +781,12 @@ function getNodeCardStyle(node, idx) {
 
 .flow-node {
   min-height: 85px;
-  backdrop-filter: blur(12px);
   cursor: pointer;
   border-width: 2px;
   border-style: solid;
+  touch-action: manipulation;
+  contain: layout style;
+  transition: transform 0.12s ease, border-color 0.12s ease;
 }
 
 .compact-card {
@@ -781,19 +809,20 @@ function getNodeCardStyle(node, idx) {
   border-style: dashed !important;
 }
 
+/* GPU-composited target pulse */
 .active-target {
-  animation: pulse-border 1.4s infinite;
+  border-color: #FACC15 !important;
+  animation: pulse-card 1.2s ease-in-out infinite;
 }
 
-@keyframes pulse-border {
-  0% {
-    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+@keyframes pulse-card {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
   }
-  70% {
-    box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  50% {
+    transform: scale(1.02);
+    opacity: 0.92;
   }
 }
 
@@ -810,27 +839,28 @@ function getNodeCardStyle(node, idx) {
 }
 
 .bank-card {
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+  background: #1E293B;
   border: 1px solid rgba(245, 158, 11, 0.3);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  cursor: grab;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
   user-select: none;
-  transition: all 0.2s ease;
+  touch-action: manipulation;
+  contain: layout style;
+  transition: transform 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
 }
 
 .bank-card:hover {
-  background: linear-gradient(135deg, rgba(45, 55, 75, 0.95) 0%, rgba(20, 30, 50, 0.98) 100%);
+  background: #283548;
   border-color: #F59E0B !important;
-  box-shadow: 0 0 15px rgba(245, 158, 11, 0.5) !important;
   transform: translateY(-2px);
 }
 
 .card-selected {
-  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%) !important;
+  background: #D97706 !important;
   color: #000 !important;
   border-color: #FEF08A !important;
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.9) !important;
-  transform: scale(1.03);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.7) !important;
+  transform: scale(1.02);
 }
 .card-selected span {
   color: #000 !important;

@@ -26,6 +26,10 @@ const props = defineProps({
   depth: {
     type: Number,
     default: 0
+  },
+  childrenMap: {
+    type: Object,
+    default: () => ({})
   }
 });
 
@@ -35,8 +39,11 @@ const emit = defineEmits(['add-child', 'remove-node', 'toggle-blank']);
 const genStyle = computed(() => getGenerationStyle(props.depth));
 const nextGenStyle = computed(() => getGenerationStyle(props.depth + 1));
 
-// Direct children of this node
+// Fast O(1) children lookup via childrenMap, fallback to filter
 const children = computed(() => {
+  if (props.childrenMap && props.childrenMap[props.node.id]) {
+    return props.childrenMap[props.node.id];
+  }
   if (!props.allNodes) return [];
   return props.allNodes.filter(n => {
     if (n.id === props.node.id) return false;
@@ -184,6 +191,7 @@ const children = computed(() => {
         <FlowTreeNodeEditor 
           :node="child"
           :all-nodes="allNodes"
+          :children-map="childrenMap"
           :is-root="false"
           :max-nodes-reached="maxNodesReached"
           :compact="compact"
@@ -200,9 +208,11 @@ const children = computed(() => {
 
 <style scoped>
 .interactive-node-card {
-  backdrop-filter: blur(12px);
   border-width: 2px;
   border-style: solid;
+  touch-action: manipulation;
+  contain: layout style;
+  transition: transform 0.12s ease, border-color 0.12s ease;
 }
 
 .royal-gold-sheen {
@@ -260,7 +270,7 @@ const children = computed(() => {
   padding: 0 5px !important;
 }
 
-/* ==================== BULLETPROOF TREE CONNECTORS ==================== */
+/* ==================== CLEAN HIGH-PERFORMANCE TREE CONNECTORS ==================== */
 /* Left and right horizontal arms meeting at column center */
 .tree-child-col::before,
 .tree-child-col::after {
@@ -276,7 +286,6 @@ const children = computed(() => {
   right: 50%;
   left: 0;
   border-top: 3px solid var(--child-stem-color, #EAB308);
-  box-shadow: 0 -1px 6px var(--child-stem-glow, rgba(234, 179, 8, 0.4));
 }
 
 /* Right horizontal arm (from 50% center to right border) + vertical stem dropping down at 50% */
@@ -285,7 +294,6 @@ const children = computed(() => {
   right: 0;
   border-top: 3px solid var(--child-stem-color, #EAB308);
   border-left: 3px solid var(--child-stem-color, #EAB308);
-  box-shadow: -1px -1px 6px var(--child-stem-glow, rgba(234, 179, 8, 0.4));
 }
 
 /* First child has no left arm */

@@ -56,8 +56,27 @@ const rootNode = computed(() => {
   return explicitRoot || nodes.value[0];
 });
 
+// Pre-indexed children map for O(1) instant child lookups
+const childrenMap = computed(() => {
+  const map = {};
+  const all = nodes.value || [];
+  const rootId = rootNode.value?.id;
+  for (const node of all) {
+    if (node.id === rootId) continue;
+    const pId = (node.parentId === undefined) ? rootId : node.parentId;
+    if (pId) {
+      if (!map[pId]) map[pId] = [];
+      map[pId].push(node);
+    }
+  }
+  return map;
+});
+
 // Helper to get children of a node
 function getChildren(parentNodeId) {
+  if (childrenMap.value && childrenMap.value[parentNodeId]) {
+    return childrenMap.value[parentNodeId];
+  }
   if (!nodes.value) return [];
   const rootId = rootNode.value?.id;
 
@@ -393,6 +412,7 @@ function resetZoom() {
               v-if="rootNode"
               :node="rootNode"
               :all-nodes="nodes"
+              :children-map="childrenMap"
               :is-root="true"
               :compact="isCompact"
               :depth="0"
@@ -718,9 +738,11 @@ function resetZoom() {
 }
 
 .interactive-node-card {
-  backdrop-filter: blur(12px);
   border-width: 2px;
   border-style: solid;
+  touch-action: manipulation;
+  contain: layout style;
+  transition: transform 0.12s ease, border-color 0.12s ease;
 }
 
 .royal-gold-sheen {

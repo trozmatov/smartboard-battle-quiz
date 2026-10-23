@@ -34,6 +34,10 @@ const props = defineProps({
   depth: {
     type: Number,
     default: 0
+  },
+  childrenMap: {
+    type: Object,
+    default: () => ({})
   }
 });
 
@@ -43,8 +47,11 @@ const emit = defineEmits(['slot-click', 'unplace', 'drop-slot']);
 const genStyle = computed(() => getGenerationStyle(props.depth));
 const nextGenStyle = computed(() => getGenerationStyle(props.depth + 1));
 
-// Direct children
+// Fast O(1) children lookup via childrenMap, fallback to filter
 const children = computed(() => {
+  if (props.childrenMap && props.childrenMap[props.node.id]) {
+    return props.childrenMap[props.node.id];
+  }
   if (!props.allNodes) return [];
   return props.allNodes.filter(n => {
     if (n.id === props.node.id) return false;
@@ -63,7 +70,7 @@ function getNodeStatus(node) {
   return placed.nodeId === node.id ? 'correct' : 'wrong';
 }
 
-// Compute dynamic border, glow and background for the node card
+// Compute dynamic border and background for the node card (high-performance hex colors)
 const dynamicCardStyle = computed(() => {
   const isFilled = props.node.isBlank && props.placedCards[props.node.id];
   const isTarget = props.selectedCard && props.node.isBlank && !props.isAnswered;
@@ -73,15 +80,15 @@ const dynamicCardStyle = computed(() => {
     const status = getNodeStatus(props.node);
     if (status === 'correct') {
       return {
-        background: 'linear-gradient(135deg, rgba(6, 78, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
+        background: '#064E3B',
         borderColor: '#10B981',
-        boxShadow: '0 0 20px rgba(16, 185, 129, 0.65)'
+        boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)'
       };
     } else {
       return {
-        background: 'linear-gradient(135deg, rgba(127, 29, 29, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
+        background: '#7F1D1D',
         borderColor: '#EF4444',
-        boxShadow: '0 0 20px rgba(239, 68, 68, 0.65)'
+        boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)'
       };
     }
   }
@@ -89,26 +96,26 @@ const dynamicCardStyle = computed(() => {
   // Active Target state when card is selected
   if (isTarget) {
     return {
-      background: `radial-gradient(circle at center, ${genStyle.value.badgeBg} 0%, rgba(15, 23, 42, 0.95) 100%)`,
+      background: '#1E293B',
       borderColor: '#FACC15',
-      boxShadow: `0 0 22px ${genStyle.value.glow}, 0 0 12px rgba(250, 204, 21, 0.8)`
+      boxShadow: '0 0 10px rgba(250, 204, 21, 0.5)'
     };
   }
 
-  // Blank Empty state - Generation-colored dashed border!
+  // Blank Empty state
   if (props.node.isBlank && !isFilled) {
     return {
-      background: `radial-gradient(circle at center, ${genStyle.value.badgeBg} 0%, rgba(15, 23, 42, 0.95) 100%)`,
+      background: '#0F172A',
       borderColor: genStyle.value.border,
-      boxShadow: `0 0 14px ${genStyle.value.glow}`
+      boxShadow: 'none'
     };
   }
 
-  // Static or Filled state - themed by Generation with Royal Gold rim
+  // Static or Filled state - themed by Generation with solid rich palette
   return {
     background: genStyle.value.bg,
     borderColor: genStyle.value.border,
-    boxShadow: `0 0 15px ${genStyle.value.glow}, inset 0 1px 0 rgba(255, 255, 255, 0.15)`
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.35)'
   };
 });
 </script>
@@ -235,6 +242,7 @@ const dynamicCardStyle = computed(() => {
         <FlowTreeNodePlay 
           :node="child"
           :all-nodes="allNodes"
+          :children-map="childrenMap"
           :is-root="false"
           :is-answered="isAnswered"
           :placed-cards="placedCards"
@@ -254,10 +262,12 @@ const dynamicCardStyle = computed(() => {
 <style scoped>
 .flow-node {
   min-height: 85px;
-  backdrop-filter: blur(12px);
   cursor: pointer;
   border-width: 2px;
   border-style: solid;
+  touch-action: manipulation;
+  contain: layout style;
+  transition: transform 0.12s ease, border-color 0.12s ease;
 }
 
 .compact-card {
@@ -281,19 +291,20 @@ const dynamicCardStyle = computed(() => {
   border-style: dashed !important;
 }
 
+/* Fast, GPU-composited target pulse (no repaints!) */
 .active-target {
-  animation: pulse-border 1.4s infinite;
+  border-color: #FACC15 !important;
+  animation: pulse-card 1.2s ease-in-out infinite;
 }
 
-@keyframes pulse-border {
-  0% {
-    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+@keyframes pulse-card {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
   }
-  70% {
-    box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  50% {
+    transform: scale(1.02);
+    opacity: 0.92;
   }
 }
 
@@ -343,7 +354,7 @@ const dynamicCardStyle = computed(() => {
   padding: 0 5px !important;
 }
 
-/* ==================== BULLETPROOF TREE CONNECTORS ==================== */
+/* ==================== CLEAN HIGH-PERFORMANCE TREE CONNECTORS ==================== */
 /* Left and right horizontal arms meeting at column center */
 .tree-child-col::before,
 .tree-child-col::after {
@@ -359,7 +370,6 @@ const dynamicCardStyle = computed(() => {
   right: 50%;
   left: 0;
   border-top: 3px solid var(--child-stem-color, #EAB308);
-  box-shadow: 0 -1px 6px var(--child-stem-glow, rgba(234, 179, 8, 0.4));
 }
 
 /* Right horizontal arm (from 50% center to right border) + vertical stem dropping down at 50% */
@@ -368,7 +378,6 @@ const dynamicCardStyle = computed(() => {
   right: 0;
   border-top: 3px solid var(--child-stem-color, #EAB308);
   border-left: 3px solid var(--child-stem-color, #EAB308);
-  box-shadow: -1px -1px 6px var(--child-stem-glow, rgba(234, 179, 8, 0.4));
 }
 
 /* First child has no left arm */
