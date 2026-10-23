@@ -123,6 +123,64 @@ export const DEFAULT_QUIZZES = [
         points: 150
       }
     ]
+  },
+  {
+    title: '🧩 Tarix va Tabiat: Sxemalarni To\'ldirish (Flowchart Battle)',
+    questions: [
+      {
+        type: 'flowchart',
+        questionText: 'Suvning tabiatda aylanish jarayonini to\'ldiring:',
+        layout: 'cycle',
+        scoringType: 'partial',
+        timeLimit: 30,
+        points: 150,
+        nodes: [
+          { id: 'n1', text: 'Quyosh issiqligida suvning bug\'lanishi', isBlank: false, label: '1-qadam' },
+          { id: 'n2', text: 'Bug\'ning sovishi va bulutlar hosil bo\'lishi (kondensatsiya)', isBlank: true, label: '2-qadam' },
+          { id: 'n3', text: 'Yomg\'ir va qor ko\'rinishida yog\'ingarchilik', isBlank: true, label: '3-qadam' },
+          { id: 'n4', text: 'Suv havzalari va yer ostiga qaytib quyilish', isBlank: false, label: '4-qadam' }
+        ],
+        distractors: [
+          'Suvning birdaniga kosmosga uchib ketishi',
+          'Yer yuzasining to\'liq muzlab qolishi'
+        ]
+      },
+      {
+        type: 'flowchart',
+        questionText: 'Fotosintez jarayoni zanjirini to\'g\'ri joylashtiring:',
+        layout: 'linear',
+        scoringType: 'partial',
+        timeLimit: 25,
+        points: 150,
+        nodes: [
+          { id: 'p1', text: 'Quyosh nuri, suv va karbonat angidrid qabul qilinadi', isBlank: false, label: 'Boshlang\'ich' },
+          { id: 'p2', text: 'Xloroplastlarda kimyoviy sintez reaksiyasi kechadi', isBlank: true, label: 'Jarayon' },
+          { id: 'p3', text: 'Organik moddalar (glyukoza) sintezlanadi', isBlank: true, label: 'Mahsulot' },
+          { id: 'p4', text: 'Atmosferaga toza kislorod gazi ajraladi', isBlank: false, label: 'Natija' }
+        ],
+        distractors: [
+          'Azot gazi to\'liq yutiladi'
+        ]
+      },
+      {
+        type: 'flowchart',
+        questionText: 'Amir Temur davlatidagi boshqaruv tuzilmasini to\'ldiring:',
+        layout: 'branching',
+        scoringType: 'all_or_nothing',
+        timeLimit: 30,
+        points: 200,
+        nodes: [
+          { id: 't1', text: 'Sohibqiron Amir Temur (Oliy Hukmdor)', isBlank: false, label: 'Oliy hokimiyat' },
+          { id: 't2', text: 'Bosh Vazir va Devon (Ijroiya hokimiyati)', isBlank: true, label: '1-tarmoq' },
+          { id: 't3', text: 'Amir ul-umaro (Oliy qo\'mondonlik va harbiy qo\'shin)', isBlank: true, label: '2-tarmoq' },
+          { id: 't4', text: 'Bosh Qozi va Shayxulislom (Adliya va shariat ishlari)', isBlank: true, label: '3-tarmoq' }
+        ],
+        distractors: [
+          'Zamonaviy Parlament (Oliy Majlis)',
+          'Mahalliy shahar hokimligi'
+        ]
+      }
+    ]
   }
 ];
 

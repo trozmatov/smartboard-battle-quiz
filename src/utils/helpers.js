@@ -59,7 +59,7 @@ export function shuffleQuestionsAndOptions(originalQuestions) {
 
   // 2. Shuffle options for every question while preserving the correct answer index
   return shuffledQuestions.map((q) => {
-    // Handling new chronological type
+    // Handling chronological type
     if (q.type === 'chronology' && q.items) {
       let shuffledItems = shuffle([...q.items]);
       
@@ -76,6 +76,32 @@ export function shuffleQuestionsAndOptions(originalQuestions) {
       return {
         ...q,
         displayItems: shuffledItems
+      };
+    }
+
+    // Handling flowchart filler type
+    if (q.type === 'flowchart' && q.nodes) {
+      const blankNodes = (q.nodes || []).filter(n => n.isBlank);
+      const blankCards = blankNodes.map(n => ({
+        id: `card-${n.id}`,
+        nodeId: n.id,
+        text: n.text,
+        isDistractor: false
+      }));
+
+      const distractorCards = (q.distractors || [])
+        .filter(d => typeof d === 'string' ? d.trim().length > 0 : (d && d.text))
+        .map((d, idx) => ({
+          id: `distractor-${idx}`,
+          nodeId: null,
+          text: typeof d === 'string' ? d.trim() : d.text,
+          isDistractor: true
+        }));
+
+      let shuffledCards = shuffle([...blankCards, ...distractorCards]);
+      return {
+        ...q,
+        displayCards: shuffledCards
       };
     }
 

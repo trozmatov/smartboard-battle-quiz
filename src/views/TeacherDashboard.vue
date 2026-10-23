@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import SavedQuizzesModal from '../components/SavedQuizzesModal.vue';
 import AiQuizModal from '../components/AiQuizModal.vue';
 import ChronologyQuestionEditor from '../components/ChronologyQuestionEditor.vue';
+import FlowchartQuestionEditor from '../components/FlowchartQuestionEditor.vue';
 import { getQuizzes, saveQuiz, updateQuiz, deleteQuiz, seedDefaultQuizzes, DEFAULT_QUIZZES } from '../firebase/quizService';
 import { createGameSession } from '../firebase/gameService';
 import { sound } from '../utils/sound';
@@ -936,6 +937,8 @@ onMounted(async () => {
                         <span><i class="bi bi-stopwatch me-1"></i>{{ q.timeLimit }}s</span>
                         <span>•</span>
                         <span><i class="bi bi-star-fill text-warning me-1"></i>{{ q.points }} ball</span>
+                        <span v-if="q.type === 'flowchart'" class="badge bg-info bg-opacity-25 text-info px-1 py-0" style="font-size: 0.65rem;">Sxema</span>
+                        <span v-else-if="q.type === 'chronology'" class="badge bg-warning bg-opacity-25 text-warning px-1 py-0" style="font-size: 0.65rem;">Puzzle</span>
                       </div>
                     </div>
                   </div>
@@ -997,6 +1000,7 @@ onMounted(async () => {
                     >
                       <option value="multiple_choice">Oddiy (4 ta variant)</option>
                       <option value="chronology">Xronologik tartib (Puzzle)</option>
+                      <option value="flowchart">Flowchart (Sxema to'ldirish)</option>
                     </select>
                   </div>
 
@@ -1213,6 +1217,14 @@ onMounted(async () => {
               <!-- Chronology Option Editor -->
               <div v-else-if="activeQuestion.type === 'chronology'">
                 <ChronologyQuestionEditor 
+                  :question="currentQuiz.questions[selectedQuestionIndex]" 
+                  @update:question="(newQ) => currentQuiz.questions[selectedQuestionIndex] = newQ" 
+                />
+              </div>
+
+              <!-- Flowchart Option Editor -->
+              <div v-else-if="activeQuestion.type === 'flowchart'">
+                <FlowchartQuestionEditor 
                   :question="currentQuiz.questions[selectedQuestionIndex]" 
                   @update:question="(newQ) => currentQuiz.questions[selectedQuestionIndex] = newQ" 
                 />

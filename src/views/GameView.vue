@@ -12,6 +12,7 @@ import { DEFAULT_QUIZZES } from '../firebase/quizService';
 import { sound } from '../utils/sound';
 import { shuffleQuestionsAndOptions } from '../utils/helpers';
 import ChronologyQuestionPlay from '../components/ChronologyQuestionPlay.vue';
+import FlowchartQuestionPlay from '../components/FlowchartQuestionPlay.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -250,6 +251,54 @@ async function handleChronologySelect(playerKey, submittedOrderIds) {
       await submitPlayerAnswer(gameId.value, playerKey, submittedOrderIds, isCorrect, points, game.value[otherKey].answeredCurrent);
     } catch (err) {
       console.warn('Could not sync answer to Firestore:', err);
+    }
+  }
+}
+
+async function handleFlowchartSubmit(playerKey, payload) {
+  if (isGameOver.value) return;
+
+  const player = game.value[playerKey];
+  if (player.answeredCurrent) return; // Prevent double answering
+
+  const targetQuestion = playerKey === 'p1' ? p1CurrentQuestion.value : p2CurrentQuestion.value;
+  if (!targetQuestion || targetQuestion.type !== 'flowchart') return;
+
+  const points = typeof payload.pointsWon === 'number' ? payload.pointsWon : 0;
+  const isCorrect = !!payload.isCorrect;
+
+  // Immediate Local UI Update
+  player.answeredCurrent = true;
+  player.selectedAnswer = payload;
+  player.isCorrect = isCorrect;
+  player.lastPointsWon = points;
+  player.score += points;
+
+  // Sound cue
+  if (points > 0) {
+    sound.playCorrect();
+  } else {
+    sound.playWrong();
+  }
+
+  // Check if both players have now answered
+  const otherKey = playerKey === 'p1' ? 'p2' : 'p1';
+  if (game.value[otherKey].answeredCurrent) {
+    stopTimer();
+    game.value.roundEnded = true;
+
+    if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+    autoAdvanceTimer = setTimeout(() => {
+      handleNextQuestion();
+    }, 3200); // give enough time to review flowchart results
+  }
+
+  // Sync with Firestore if active session exists
+  if (gameId.value) {
+    try {
+      await submitPlayerAnswer(gameId.value, playerKey, payload, isCorrect, points, game.value[otherKey].answeredCurrent);
+    } catch (err) {
+      console.warn('Could not sync flowchart answer to Firestore:', err);
     }
   }
 }
@@ -662,6 +711,17 @@ onUnmounted(() => {
           />
         </div>
 
+        <!-- P1 Flowchart Game UI -->
+        <div v-else-if="p1CurrentQuestion && p1CurrentQuestion.type === 'flowchart'" class="flex-grow-1 p-2">
+          <FlowchartQuestionPlay 
+            :question="p1CurrentQuestion"
+            :playerKey="'p1'"
+            :game="game"
+            :timeLeft="timeLeft"
+            @submit="handleFlowchartSubmit"
+          />
+        </div>
+
       </section>
 
       <!-- ==================== RIGHT HALF: PLAYER 2 (BLUE) ==================== -->
@@ -774,6 +834,17 @@ onUnmounted(() => {
             :game="game"
             :timeLeft="timeLeft"
             @submit="handleChronologySelect"
+          />
+        </div>
+
+        <!-- P2 Flowchart Game UI -->
+        <div v-else-if="p2CurrentQuestion && p2CurrentQuestion.type === 'flowchart'" class="flex-grow-1 p-2">
+          <FlowchartQuestionPlay 
+            :question="p2CurrentQuestion"
+            :playerKey="'p2'"
+            :game="game"
+            :timeLeft="timeLeft"
+            @submit="handleFlowchartSubmit"
           />
         </div>
 

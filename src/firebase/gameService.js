@@ -179,7 +179,7 @@ export function subscribeToGame(gameId, callback) {
 export async function submitPlayerAnswer(gameId, playerKey, selectedIndex, isCorrect, pointsEarned, bothAnswered = false) {
   try {
     const docRef = doc(db, ACTIVE_GAMES_COLLECTION, gameId);
-    const earned = isCorrect ? (pointsEarned || 0) : 0;
+    const earned = typeof pointsEarned === 'number' && pointsEarned > 0 ? pointsEarned : (isCorrect ? (pointsEarned || 0) : 0);
 
     const updatePayload = {
       [`${playerKey}.answeredCurrent`]: true,
