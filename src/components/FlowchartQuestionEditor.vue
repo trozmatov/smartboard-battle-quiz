@@ -375,15 +375,20 @@ function resetZoom() {
       <div class="interactive-canvas py-4 px-2 d-flex justify-content-center align-items-start overflow-auto position-relative" style="min-height: 420px; max-height: 720px;">
         
         <div 
-          class="canvas-zoom-wrapper w-100 d-flex justify-content-center"
+          class="canvas-zoom-wrapper d-flex justify-content-center"
           :style="{
             transform: `scale(${zoomLevel})`,
             transformOrigin: 'top center',
+            minWidth: 'max-content',
             transition: 'transform 0.2s ease'
           }"
         >
           <!-- ==================== 1. BRANCHING / FAMILY TREE LAYOUT (Unlimited Depth) ==================== -->
-          <div v-if="question.layout === 'branching'" class="tree-root-container d-flex flex-column align-items-center w-100">
+          <div 
+            v-if="question.layout === 'branching'" 
+            class="tree-root-container d-flex flex-column align-items-center"
+            style="min-width: max-content;"
+          >
             <FlowTreeNodeEditor 
               v-if="rootNode"
               :node="rootNode"

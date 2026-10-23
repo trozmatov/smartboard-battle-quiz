@@ -44,14 +44,26 @@ const useSideDock = ref(props.question.layout === 'branching'); // Side bank for
 // Auto-fit zoom calculation
 function autoFitZoom() {
   const count = props.question.nodes?.length || 0;
-  if (count >= 16) {
-    zoomLevel.value = 0.65;
-  } else if (count >= 10) {
-    zoomLevel.value = 0.75;
-  } else if (count >= 6) {
-    zoomLevel.value = 0.88;
+  if (props.question.layout === 'branching') {
+    if (count >= 14) {
+      zoomLevel.value = 0.52;
+    } else if (count >= 9) {
+      zoomLevel.value = 0.65;
+    } else if (count >= 6) {
+      zoomLevel.value = 0.78;
+    } else {
+      zoomLevel.value = 0.9;
+    }
   } else {
-    zoomLevel.value = 1.0;
+    if (count >= 16) {
+      zoomLevel.value = 0.65;
+    } else if (count >= 10) {
+      zoomLevel.value = 0.75;
+    } else if (count >= 6) {
+      zoomLevel.value = 0.88;
+    } else {
+      zoomLevel.value = 1.0;
+    }
   }
 }
 
@@ -60,7 +72,7 @@ function zoomIn() {
 }
 
 function zoomOut() {
-  zoomLevel.value = Math.max(0.45, +(zoomLevel.value - 0.1).toFixed(2));
+  zoomLevel.value = Math.max(0.3, +(zoomLevel.value - 0.1).toFixed(2));
 }
 
 function resetZoom() {
@@ -420,10 +432,11 @@ function getNodeCardStyle(node, idx) {
       >
         <!-- SCALED VIEWPORT WRAPPER -->
         <div 
-          class="diagram-viewport w-100 d-flex justify-content-center transition-all"
+          class="diagram-viewport d-flex justify-content-center transition-all"
           :style="{ 
             transform: `scale(${zoomLevel})`, 
             transformOrigin: 'top center',
+            minWidth: 'max-content',
             paddingBottom: '40px'
           }"
         >
@@ -495,7 +508,11 @@ function getNodeCardStyle(node, idx) {
           </div>
 
           <!-- 2. Branching / Family Tree Layout (Recursive Unlimited Depth & Compact) -->
-          <div v-else-if="question.layout === 'branching'" class="layout-branching d-flex flex-column align-items-center w-100 py-2">
+          <div 
+            v-else-if="question.layout === 'branching'" 
+            class="layout-branching d-flex flex-column align-items-center py-2"
+            style="min-width: max-content;"
+          >
             <FlowTreeNodePlay 
               v-if="rootNode"
               :node="rootNode"

@@ -62,8 +62,8 @@ const children = computed(() => {
       :style="{ 
         width: compact ? (isRoot ? '190px' : '155px') : (isRoot ? '240px' : '200px'),
         background: genStyle.bg,
-        borderColor: node.isBlank ? '#F59E0B' : genStyle.border,
-        boxShadow: node.isBlank ? '0 0 16px rgba(245, 158, 11, 0.35)' : `0 0 15px ${genStyle.glow}`
+        borderColor: genStyle.border,
+        boxShadow: node.isBlank ? `0 0 16px ${genStyle.glow}` : `0 0 15px ${genStyle.glow}`
       }"
     >
       <!-- Royal Gold Top Sheen -->
@@ -158,14 +158,13 @@ const children = computed(() => {
       }"
     ></div>
 
-    <!-- RECURSIVE CHILDREN ROW -->
+    <!-- RECURSIVE CHILDREN ROW (Siblings in Next Generation: NEVER WRAP!) -->
     <div 
       v-if="children.length > 0" 
-      class="tree-children-row d-flex justify-content-center flex-wrap position-relative"
+      class="tree-children-row d-flex justify-content-center flex-nowrap position-relative"
       :class="{ 
         'multiple-children': children.length > 1,
-        'gap-2 compact-children-row': compact,
-        'gap-3': !compact
+        'compact-children-row': compact
       }"
       :style="{
         '--branch-color': nextGenStyle.stemColor,
@@ -229,46 +228,89 @@ const children = computed(() => {
 
 .tree-stem-down {
   width: 3px;
-  height: 20px;
+  height: 14px;
   border-radius: 2px;
 }
 
 .compact-stem {
-  height: 12px !important;
+  height: 10px !important;
 }
 
+/* Children Row: strictly nowrap to prevent sibling vertical stacking! */
 .tree-children-row {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  justify-content: center;
+  align-items: flex-start;
   padding-top: 14px;
 }
 
 .compact-children-row {
-  padding-top: 8px !important;
+  padding-top: 10px !important;
 }
 
-.tree-children-row.multiple-children::before {
+/* Each sibling column */
+.tree-child-col {
+  padding: 0 8px;
+  flex: 0 0 auto;
+}
+
+.compact-child-col {
+  padding: 0 5px !important;
+}
+
+/* ==================== BULLETPROOF TREE CONNECTORS ==================== */
+/* Left and right horizontal arms meeting at column center */
+.tree-child-col::before,
+.tree-child-col::after {
   content: '';
   position: absolute;
   top: 0;
-  left: 10%;
-  right: 10%;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--branch-color, #EAB308);
-  box-shadow: 0 0 8px var(--branch-glow, rgba(234, 179, 8, 0.4));
-}
-
-.tree-child-col::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  width: 3px;
   height: 14px;
-  border-radius: 2px;
-  background: var(--child-stem-color, #EAB308);
-  box-shadow: 0 0 8px var(--child-stem-glow, rgba(234, 179, 8, 0.4));
+  box-sizing: border-box;
 }
 
-.compact-child-col::before {
-  height: 8px !important;
+/* Left horizontal arm (from left border of column to 50% center) */
+.tree-child-col::before {
+  right: 50%;
+  left: 0;
+  border-top: 3px solid var(--child-stem-color, #EAB308);
+  box-shadow: 0 -1px 6px var(--child-stem-glow, rgba(234, 179, 8, 0.4));
+}
+
+/* Right horizontal arm (from 50% center to right border) + vertical stem dropping down at 50% */
+.tree-child-col::after {
+  left: 50%;
+  right: 0;
+  border-top: 3px solid var(--child-stem-color, #EAB308);
+  border-left: 3px solid var(--child-stem-color, #EAB308);
+  box-shadow: -1px -1px 6px var(--child-stem-glow, rgba(234, 179, 8, 0.4));
+}
+
+/* First child has no left arm */
+.tree-child-col:first-child::before {
+  display: none !important;
+}
+
+/* Last child has no right arm */
+.tree-child-col:last-child::after {
+  border-top: none !important;
+}
+
+/* Only child has no horizontal bar at all: only a straight vertical line */
+.tree-child-col:only-child::before {
+  display: none !important;
+}
+.tree-child-col:only-child::after {
+  border-top: none !important;
+  right: auto !important;
+  width: 3px !important;
+}
+
+/* Compact mode heights */
+.compact-child-col::before,
+.compact-child-col::after {
+  height: 10px !important;
 }
 </style>

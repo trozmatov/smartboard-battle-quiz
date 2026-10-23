@@ -63,7 +63,7 @@ function getNodeStatus(node) {
   return placed.nodeId === node.id ? 'correct' : 'wrong';
 }
 
-// Compute dynamic border and shadow for the node card
+// Compute dynamic border, glow and background for the node card
 const dynamicCardStyle = computed(() => {
   const isFilled = props.node.isBlank && props.placedCards[props.node.id];
   const isTarget = props.selectedCard && props.node.isBlank && !props.isAnswered;
@@ -89,18 +89,18 @@ const dynamicCardStyle = computed(() => {
   // Active Target state when card is selected
   if (isTarget) {
     return {
-      background: 'radial-gradient(circle at center, rgba(245, 158, 11, 0.2) 0%, rgba(15, 23, 42, 0.95) 100%)',
-      borderColor: '#F59E0B',
-      boxShadow: '0 0 20px rgba(245, 158, 11, 0.8)'
+      background: `radial-gradient(circle at center, ${genStyle.value.badgeBg} 0%, rgba(15, 23, 42, 0.95) 100%)`,
+      borderColor: '#FACC15',
+      boxShadow: `0 0 22px ${genStyle.value.glow}, 0 0 12px rgba(250, 204, 21, 0.8)`
     };
   }
 
-  // Blank Empty state
+  // Blank Empty state - Generation-colored dashed border!
   if (props.node.isBlank && !isFilled) {
     return {
-      background: 'radial-gradient(circle at center, rgba(245, 158, 11, 0.08) 0%, rgba(15, 23, 42, 0.95) 100%)',
-      borderColor: '#F59E0B',
-      boxShadow: '0 0 12px rgba(245, 158, 11, 0.25)'
+      background: `radial-gradient(circle at center, ${genStyle.value.badgeBg} 0%, rgba(15, 23, 42, 0.95) 100%)`,
+      borderColor: genStyle.value.border,
+      boxShadow: `0 0 14px ${genStyle.value.glow}`
     };
   }
 
@@ -128,8 +128,8 @@ const dynamicCardStyle = computed(() => {
       }"
       :style="{ 
         ...dynamicCardStyle,
-        minWidth: compact ? (isRoot ? '165px' : '135px') : (isRoot ? '210px' : '160px'), 
-        maxWidth: compact ? (isRoot ? '220px' : '185px') : (isRoot ? '270px' : '220px') 
+        minWidth: compact ? (isRoot ? '160px' : '135px') : (isRoot ? '210px' : '160px'), 
+        maxWidth: compact ? (isRoot ? '210px' : '175px') : (isRoot ? '260px' : '210px') 
       }"
       @click="emit('slot-click', node)"
       @dragover.prevent
@@ -163,7 +163,7 @@ const dynamicCardStyle = computed(() => {
       <!-- CARD BODY -->
       <div class="node-content text-center" :class="compact ? 'py-0' : 'py-1'">
         <!-- Static Node Text -->
-        <div v-if="!node.isBlank" class="fw-bold text-white small" :style="{ fontSize: compact ? '0.82rem' : '0.92rem' }">
+        <div v-if="!node.isBlank" class="fw-bold text-white small text-truncate" :style="{ fontSize: compact ? '0.82rem' : '0.92rem' }">
           {{ node.text }}
         </div>
 
@@ -185,8 +185,8 @@ const dynamicCardStyle = computed(() => {
 
         <!-- Blank Slot Empty Placeholder -->
         <div v-else class="empty-placeholder d-flex align-items-center justify-content-center text-muted" :class="compact ? 'py-1 gap-1' : 'flex-column py-2'">
-          <i class="bi bi-plus-circle text-warning" :class="compact ? 'fs-6' : 'fs-4 mb-1'"></i>
-          <span class="fw-semibold text-warning" :style="{ fontSize: compact ? '0.7rem' : '0.8rem' }">Bo'sh katak</span>
+          <i class="bi bi-plus-circle" :style="{ color: genStyle.accent }" :class="compact ? 'fs-6' : 'fs-5 mb-1'"></i>
+          <span class="fw-semibold" :style="{ color: genStyle.accent, fontSize: compact ? '0.7rem' : '0.8rem' }">Bo'sh katak</span>
         </div>
 
         <!-- Correct Answer Revealed After Evaluation -->
@@ -198,7 +198,7 @@ const dynamicCardStyle = computed(() => {
       </div>
     </div>
 
-    <!-- STEM DOWN (Glowing gradient into next generation) -->
+    <!-- STEM DOWN (From parent card down to children connector bar) -->
     <div 
       v-if="children.length > 0" 
       class="tree-stem-down" 
@@ -209,14 +209,13 @@ const dynamicCardStyle = computed(() => {
       }"
     ></div>
 
-    <!-- RECURSIVE CHILDREN ROW (Siblings in Next Generation) -->
+    <!-- RECURSIVE CHILDREN ROW (Siblings in Next Generation: NEVER WRAP!) -->
     <div 
       v-if="children.length > 0" 
-      class="tree-children-row d-flex justify-content-center flex-wrap position-relative w-100"
+      class="tree-children-row d-flex justify-content-center flex-nowrap position-relative"
       :class="{ 
         'multiple-children': children.length > 1,
-        'gap-2 compact-children-row': compact,
-        'gap-3': !compact
+        'compact-children-row': compact
       }"
       :style="{
         '--branch-color': nextGenStyle.stemColor,
@@ -312,46 +311,89 @@ const dynamicCardStyle = computed(() => {
 
 .tree-stem-down {
   width: 3px;
-  height: 20px;
+  height: 14px;
   border-radius: 2px;
 }
 
 .compact-stem {
-  height: 12px !important;
+  height: 10px !important;
 }
 
+/* Children Row: strictly nowrap to prevent sibling vertical stacking! */
 .tree-children-row {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  justify-content: center;
+  align-items: flex-start;
   padding-top: 14px;
 }
 
 .compact-children-row {
-  padding-top: 8px !important;
+  padding-top: 10px !important;
 }
 
-.tree-children-row.multiple-children::before {
+/* Each sibling column */
+.tree-child-col {
+  padding: 0 8px;
+  flex: 0 0 auto;
+}
+
+.compact-child-col {
+  padding: 0 5px !important;
+}
+
+/* ==================== BULLETPROOF TREE CONNECTORS ==================== */
+/* Left and right horizontal arms meeting at column center */
+.tree-child-col::before,
+.tree-child-col::after {
   content: '';
   position: absolute;
   top: 0;
-  left: 10%;
-  right: 10%;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--branch-color, #EAB308);
-  box-shadow: 0 0 8px var(--branch-glow, rgba(234, 179, 8, 0.4));
-}
-
-.tree-child-col::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  width: 3px;
   height: 14px;
-  border-radius: 2px;
-  background: var(--child-stem-color, #EAB308);
-  box-shadow: 0 0 8px var(--child-stem-glow, rgba(234, 179, 8, 0.4));
+  box-sizing: border-box;
 }
 
-.compact-child-col::before {
-  height: 8px !important;
+/* Left horizontal arm (from left border of column to 50% center) */
+.tree-child-col::before {
+  right: 50%;
+  left: 0;
+  border-top: 3px solid var(--child-stem-color, #EAB308);
+  box-shadow: 0 -1px 6px var(--child-stem-glow, rgba(234, 179, 8, 0.4));
+}
+
+/* Right horizontal arm (from 50% center to right border) + vertical stem dropping down at 50% */
+.tree-child-col::after {
+  left: 50%;
+  right: 0;
+  border-top: 3px solid var(--child-stem-color, #EAB308);
+  border-left: 3px solid var(--child-stem-color, #EAB308);
+  box-shadow: -1px -1px 6px var(--child-stem-glow, rgba(234, 179, 8, 0.4));
+}
+
+/* First child has no left arm */
+.tree-child-col:first-child::before {
+  display: none !important;
+}
+
+/* Last child has no right arm */
+.tree-child-col:last-child::after {
+  border-top: none !important;
+}
+
+/* Only child has no horizontal bar at all: only a straight vertical line */
+.tree-child-col:only-child::before {
+  display: none !important;
+}
+.tree-child-col:only-child::after {
+  border-top: none !important;
+  right: auto !important;
+  width: 3px !important;
+}
+
+/* Compact mode heights */
+.compact-child-col::before,
+.compact-child-col::after {
+  height: 10px !important;
 }
 </style>
