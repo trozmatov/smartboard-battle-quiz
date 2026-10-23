@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import draggable from 'vuedraggable';
 import FlowTreeNodeEditor from './FlowTreeNodeEditor.vue';
+import { getGenerationStyle, GENERATION_PALETTES } from '../utils/flowchartTheme.js';
 
 const props = defineProps({
   question: {
@@ -350,6 +351,26 @@ function resetZoom() {
         </button>
       </div>
 
+      <!-- Dynasty Legend in Editor -->
+      <div 
+        v-if="question.layout === 'branching'" 
+        class="d-flex align-items-center gap-1 flex-wrap py-1 px-3 mb-3 rounded-pill border border-warning border-opacity-25 shadow-sm"
+        style="background: rgba(15, 23, 42, 0.85);"
+      >
+        <span class="small fw-bold text-warning font-monospace text-nowrap me-2">
+          <i class="bi bi-crown-fill text-warning me-1"></i> Shajara Palitrasi:
+        </span>
+        <span 
+          v-for="p in GENERATION_PALETTES.slice(0, 5)" 
+          :key="p.depth" 
+          class="badge rounded-pill d-inline-flex align-items-center gap-1 font-monospace"
+          :style="{ background: p.badgeBg, border: `1px solid ${p.badgeBorder}`, color: p.badgeText, fontSize: '0.68rem' }"
+        >
+          <i :class="p.icon"></i>
+          <span>{{ p.roman }} ({{ p.title.split('(')[1]?.replace(')', '') || p.title }})</span>
+        </span>
+      </div>
+
       <!-- INTERACTIVE PREVIEW DIAGRAM VIEWPORTS -->
       <div class="interactive-canvas py-4 px-2 d-flex justify-content-center align-items-start overflow-auto position-relative" style="min-height: 420px; max-height: 720px;">
         
@@ -369,6 +390,7 @@ function resetZoom() {
               :all-nodes="nodes"
               :is-root="true"
               :compact="isCompact"
+              :depth="0"
               :max-nodes-reached="nodes.length >= 24"
               @add-child="addChild($event)"
               @remove-node="removeNodeById($event)"
@@ -383,22 +405,36 @@ function resetZoom() {
             <div 
               class="interactive-node-card p-3 rounded-4 shadow-lg border transition-all position-relative"
               :class="node.isBlank ? 'node-card-blank' : 'node-card-static'"
-              style="width: 200px;"
+              :style="{ 
+                width: isCompact ? '165px' : '205px',
+                background: getGenerationStyle(idx).bg,
+                borderColor: node.isBlank ? '#F59E0B' : getGenerationStyle(idx).border,
+                boxShadow: node.isBlank ? '0 0 16px rgba(245, 158, 11, 0.35)' : `0 0 15px ${getGenerationStyle(idx).glow}`
+              }"
             >
+              <div class="royal-gold-sheen"></div>
               <div class="d-flex align-items-center justify-content-between mb-2">
-                <input 
-                  v-model="node.label" 
-                  class="badge-input form-control form-control-xs py-0 px-1 text-center font-monospace"
-                  :class="node.isBlank ? 'bg-warning text-dark' : 'bg-primary text-white'"
-                  placeholder="Bosqich"
-                  style="max-width: 80px; font-size: 0.7rem;"
-                />
+                <div class="d-flex align-items-center gap-1">
+                  <i :class="getGenerationStyle(idx).icon" :style="{ color: getGenerationStyle(idx).accent, fontSize: '0.85rem' }"></i>
+                  <input 
+                    v-model="node.label" 
+                    class="badge-input form-control form-control-xs py-0 px-1 text-center font-monospace"
+                    :style="{ 
+                      background: getGenerationStyle(idx).badgeBg, 
+                      border: `1px solid ${getGenerationStyle(idx).badgeBorder}`, 
+                      color: getGenerationStyle(idx).badgeText,
+                      maxWidth: '85px', 
+                      fontSize: '0.7rem' 
+                    }"
+                    :placeholder="getGenerationStyle(idx).roman"
+                  />
+                </div>
 
                 <div class="d-flex align-items-center gap-1">
                   <button 
                     @click="toggleBlank(node)" 
                     class="btn btn-xs py-0 px-2 rounded-pill fw-bold"
-                    :class="node.isBlank ? 'btn-warning text-dark' : 'btn-outline-info text-info'"
+                    :class="node.isBlank ? 'btn-warning text-dark' : 'btn-outline-light text-white opacity-75'"
                     style="font-size: 0.65rem;"
                   >
                     {{ node.isBlank ? 'Bo\'sh' : 'Statik' }}
@@ -420,16 +456,16 @@ function resetZoom() {
                 type="text" 
                 class="form-control text-center text-white fw-bold border-secondary border-opacity-50 rounded-3"
                 placeholder="Qadam matnini kiriting..."
-                style="background-color: #0F172A !important; font-size: 0.9rem;"
+                style="background-color: rgba(15, 23, 42, 0.85) !important; font-size: 0.9rem;"
               />
             </div>
 
             <!-- Arrow and Inline Add Step button -->
             <div v-if="idx < nodes.length - 1" class="d-flex flex-column align-items-center px-1">
-              <i class="bi bi-arrow-right fs-3 text-info"></i>
+              <i class="bi bi-arrow-right fs-3 text-warning" style="filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.5));"></i>
               <button 
                 @click="addLinearStep(idx)" 
-                class="btn btn-xs btn-outline-info rounded-circle p-0 mt-1" 
+                class="btn btn-xs btn-outline-warning rounded-circle p-0 mt-1" 
                 style="width: 20px; height: 20px; line-height: 1;"
                 title="O'rtaga yangi qadam qo'shish"
                 :disabled="nodes.length >= 16"
@@ -442,7 +478,7 @@ function resetZoom() {
           <!-- Add Step at end -->
           <button 
             @click="addLinearStep()" 
-            class="btn btn-outline-info rounded-4 p-3 d-flex flex-column align-items-center justify-content-center shadow-sm"
+            class="btn btn-outline-warning rounded-4 p-3 d-flex flex-column align-items-center justify-content-center shadow-sm"
             style="width: 140px; min-height: 95px; border-style: dashed !important;"
             :disabled="nodes.length >= 16"
           >
@@ -457,22 +493,36 @@ function resetZoom() {
             <div 
               class="interactive-node-card p-3 rounded-4 shadow-lg border transition-all position-relative"
               :class="node.isBlank ? 'node-card-blank' : 'node-card-static'"
-              style="width: 200px;"
+              :style="{ 
+                width: isCompact ? '165px' : '205px',
+                background: getGenerationStyle(idx).bg,
+                borderColor: node.isBlank ? '#F59E0B' : getGenerationStyle(idx).border,
+                boxShadow: node.isBlank ? '0 0 16px rgba(245, 158, 11, 0.35)' : `0 0 15px ${getGenerationStyle(idx).glow}`
+              }"
             >
+              <div class="royal-gold-sheen"></div>
               <div class="d-flex align-items-center justify-content-between mb-2">
-                <input 
-                  v-model="node.label" 
-                  class="badge-input form-control form-control-xs py-0 px-1 text-center font-monospace"
-                  :class="node.isBlank ? 'bg-warning text-dark' : 'bg-primary text-white'"
-                  placeholder="Bosqich"
-                  style="max-width: 80px; font-size: 0.7rem;"
-                />
+                <div class="d-flex align-items-center gap-1">
+                  <i :class="getGenerationStyle(idx).icon" :style="{ color: getGenerationStyle(idx).accent, fontSize: '0.85rem' }"></i>
+                  <input 
+                    v-model="node.label" 
+                    class="badge-input form-control form-control-xs py-0 px-1 text-center font-monospace"
+                    :style="{ 
+                      background: getGenerationStyle(idx).badgeBg, 
+                      border: `1px solid ${getGenerationStyle(idx).badgeBorder}`, 
+                      color: getGenerationStyle(idx).badgeText,
+                      maxWidth: '85px', 
+                      fontSize: '0.7rem' 
+                    }"
+                    :placeholder="getGenerationStyle(idx).roman"
+                  />
+                </div>
 
                 <div class="d-flex align-items-center gap-1">
                   <button 
                     @click="toggleBlank(node)" 
                     class="btn btn-xs py-0 px-2 rounded-pill fw-bold"
-                    :class="node.isBlank ? 'btn-warning text-dark' : 'btn-outline-info text-info'"
+                    :class="node.isBlank ? 'btn-warning text-dark' : 'btn-outline-light text-white opacity-75'"
                     style="font-size: 0.65rem;"
                   >
                     {{ node.isBlank ? 'Bo\'sh' : 'Statik' }}
@@ -494,15 +544,15 @@ function resetZoom() {
                 type="text" 
                 class="form-control text-center text-white fw-bold border-secondary border-opacity-50 rounded-3"
                 placeholder="Davr bosqichini yozing..."
-                style="background-color: #0F172A !important; font-size: 0.9rem;"
+                style="background-color: rgba(15, 23, 42, 0.85) !important; font-size: 0.9rem;"
               />
             </div>
 
             <div v-if="idx < nodes.length - 1" class="d-flex align-items-center px-1">
-              <i class="bi bi-arrow-right fs-3 text-info"></i>
+              <i class="bi bi-arrow-right fs-3 text-warning" style="filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.5));"></i>
             </div>
             <div v-else class="d-flex align-items-center px-1" title="Aylanma davr">
-              <i class="bi bi-arrow-repeat fs-2 text-warning"></i>
+              <i class="bi bi-arrow-repeat fs-2 text-warning" style="filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.7));"></i>
             </div>
           </template>
 
@@ -523,22 +573,36 @@ function resetZoom() {
             <div 
               class="interactive-node-card p-3 rounded-4 shadow-lg border transition-all position-relative"
               :class="node.isBlank ? 'node-card-blank' : 'node-card-static'"
-              :style="{ width: `${200 + idx * 40}px` }"
+              :style="{ 
+                width: `${200 + idx * 40}px`,
+                background: getGenerationStyle(idx).bg,
+                borderColor: node.isBlank ? '#F59E0B' : getGenerationStyle(idx).border,
+                boxShadow: node.isBlank ? '0 0 16px rgba(245, 158, 11, 0.35)' : `0 0 15px ${getGenerationStyle(idx).glow}`
+              }"
             >
+              <div class="royal-gold-sheen"></div>
               <div class="d-flex align-items-center justify-content-between mb-2">
-                <input 
-                  v-model="node.label" 
-                  class="badge-input form-control form-control-xs py-0 px-1 text-center font-monospace"
-                  :class="node.isBlank ? 'bg-warning text-dark' : 'bg-primary text-white'"
-                  placeholder="Daraja"
-                  style="max-width: 85px; font-size: 0.7rem;"
-                />
+                <div class="d-flex align-items-center gap-1">
+                  <i :class="getGenerationStyle(idx).icon" :style="{ color: getGenerationStyle(idx).accent, fontSize: '0.85rem' }"></i>
+                  <input 
+                    v-model="node.label" 
+                    class="badge-input form-control form-control-xs py-0 px-1 text-center font-monospace"
+                    :style="{ 
+                      background: getGenerationStyle(idx).badgeBg, 
+                      border: `1px solid ${getGenerationStyle(idx).badgeBorder}`, 
+                      color: getGenerationStyle(idx).badgeText,
+                      maxWidth: '85px', 
+                      fontSize: '0.7rem' 
+                    }"
+                    :placeholder="getGenerationStyle(idx).roman"
+                  />
+                </div>
 
                 <div class="d-flex align-items-center gap-1">
                   <button 
                     @click="toggleBlank(node)" 
                     class="btn btn-xs py-0 px-2 rounded-pill fw-bold"
-                    :class="node.isBlank ? 'btn-warning text-dark' : 'btn-outline-info text-info'"
+                    :class="node.isBlank ? 'btn-warning text-dark' : 'btn-outline-light text-white opacity-75'"
                     style="font-size: 0.65rem;"
                   >
                     {{ node.isBlank ? 'Bo\'sh' : 'Statik' }}
@@ -560,16 +624,16 @@ function resetZoom() {
                 type="text" 
                 class="form-control text-center text-white fw-bold border-secondary border-opacity-50 rounded-3"
                 placeholder="Mavqei / Tabaqa..."
-                style="background-color: #0F172A !important; font-size: 0.9rem;"
+                style="background-color: rgba(15, 23, 42, 0.85) !important; font-size: 0.9rem;"
               />
             </div>
 
-            <i v-if="idx < nodes.length - 1" class="bi bi-arrow-down fs-4 text-info my-1"></i>
+            <i v-if="idx < nodes.length - 1" class="bi bi-arrow-down fs-4 text-warning my-1" style="filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.5));"></i>
           </template>
 
           <button 
             @click="addLinearStep()" 
-            class="btn btn-outline-info rounded-pill px-4 py-2 mt-2 fw-bold"
+            class="btn btn-outline-warning rounded-pill px-4 py-2 mt-2 fw-bold"
             :disabled="nodes.length >= 16"
           >
             <i class="bi bi-plus-lg me-1"></i> Yangi daraja qo'shish
@@ -643,29 +707,35 @@ function resetZoom() {
 
 <style scoped>
 .interactive-canvas {
-  background: radial-gradient(circle at center, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.95) 100%);
-  border: 1px dashed rgba(255, 255, 255, 0.15);
+  background: radial-gradient(circle at 50% 20%, rgba(245, 158, 11, 0.08) 0%, rgba(15, 23, 42, 0.98) 75%);
+  border: 1px dashed rgba(245, 158, 11, 0.3);
   border-radius: 16px;
 }
 
 .interactive-node-card {
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  border-width: 2px;
+  border-style: solid;
 }
 
-.node-card-static {
-  background-color: #1E293B;
-  border-color: #38BDF8 !important;
-  box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+.royal-gold-sheen {
+  position: absolute;
+  top: 0;
+  left: 15%;
+  right: 15%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #FACC15, transparent);
+  border-radius: 2px;
+  pointer-events: none;
+  opacity: 0.8;
 }
 
 .node-card-blank {
-  background-color: #1E293B;
-  border-color: #F59E0B !important;
-  box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
+  border-style: dashed !important;
 }
 
 .badge-input {
-  border: none;
+  border-radius: 9999px;
   font-weight: bold;
 }
 

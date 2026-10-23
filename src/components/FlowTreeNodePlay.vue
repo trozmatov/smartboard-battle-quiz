@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import { getGenerationStyle } from '../utils/flowchartTheme.js';
 
 const props = defineProps({
   node: {
@@ -29,10 +30,18 @@ const props = defineProps({
   compact: {
     type: Boolean,
     default: false
+  },
+  depth: {
+    type: Number,
+    default: 0
   }
 });
 
 const emit = defineEmits(['slot-click', 'unplace', 'drop-slot']);
+
+// Generation Styles for this node and its children
+const genStyle = computed(() => getGenerationStyle(props.depth));
+const nextGenStyle = computed(() => getGenerationStyle(props.depth + 1));
 
 // Direct children
 const children = computed(() => {
@@ -53,6 +62,55 @@ function getNodeStatus(node) {
   if (!placed) return 'empty';
   return placed.nodeId === node.id ? 'correct' : 'wrong';
 }
+
+// Compute dynamic border and shadow for the node card
+const dynamicCardStyle = computed(() => {
+  const isFilled = props.node.isBlank && props.placedCards[props.node.id];
+  const isTarget = props.selectedCard && props.node.isBlank && !props.isAnswered;
+
+  // Answer Evaluation States
+  if (props.isAnswered && props.node.isBlank) {
+    const status = getNodeStatus(props.node);
+    if (status === 'correct') {
+      return {
+        background: 'linear-gradient(135deg, rgba(6, 78, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
+        borderColor: '#10B981',
+        boxShadow: '0 0 20px rgba(16, 185, 129, 0.65)'
+      };
+    } else {
+      return {
+        background: 'linear-gradient(135deg, rgba(127, 29, 29, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
+        borderColor: '#EF4444',
+        boxShadow: '0 0 20px rgba(239, 68, 68, 0.65)'
+      };
+    }
+  }
+
+  // Active Target state when card is selected
+  if (isTarget) {
+    return {
+      background: 'radial-gradient(circle at center, rgba(245, 158, 11, 0.2) 0%, rgba(15, 23, 42, 0.95) 100%)',
+      borderColor: '#F59E0B',
+      boxShadow: '0 0 20px rgba(245, 158, 11, 0.8)'
+    };
+  }
+
+  // Blank Empty state
+  if (props.node.isBlank && !isFilled) {
+    return {
+      background: 'radial-gradient(circle at center, rgba(245, 158, 11, 0.08) 0%, rgba(15, 23, 42, 0.95) 100%)',
+      borderColor: '#F59E0B',
+      boxShadow: '0 0 12px rgba(245, 158, 11, 0.25)'
+    };
+  }
+
+  // Static or Filled state - themed by Generation with Royal Gold rim
+  return {
+    background: genStyle.value.bg,
+    borderColor: genStyle.value.border,
+    boxShadow: `0 0 15px ${genStyle.value.glow}, inset 0 1px 0 rgba(255, 255, 255, 0.15)`
+  };
+});
 </script>
 
 <template>
@@ -60,35 +118,40 @@ function getNodeStatus(node) {
     
     <!-- NODE CARD -->
     <div 
-      class="flow-node position-relative shadow-md transition-all"
+      class="flow-node position-relative transition-all"
       :class="{
         'rounded-3 p-2 compact-card': compact,
         'rounded-4 p-3': !compact,
-        'static-node': !node.isBlank,
         'blank-empty': node.isBlank && !placedCards[node.id] && !isAnswered,
         'blank-filled': node.isBlank && placedCards[node.id] && !isAnswered,
-        'node-correct': isAnswered && getNodeStatus(node) === 'correct',
-        'node-wrong': isAnswered && (getNodeStatus(node) === 'wrong' || getNodeStatus(node) === 'empty'),
         'active-target': selectedCard && node.isBlank && !isAnswered
       }"
       :style="{ 
-        minWidth: compact ? (isRoot ? '160px' : '130px') : (isRoot ? '200px' : '150px'), 
-        maxWidth: compact ? (isRoot ? '210px' : '175px') : (isRoot ? '260px' : '210px') 
+        ...dynamicCardStyle,
+        minWidth: compact ? (isRoot ? '165px' : '135px') : (isRoot ? '210px' : '160px'), 
+        maxWidth: compact ? (isRoot ? '220px' : '185px') : (isRoot ? '270px' : '220px') 
       }"
       @click="emit('slot-click', node)"
       @dragover.prevent
       @drop="emit('drop-slot', { node, event: $event })"
     >
+      <!-- Royal Gold Top Sheen -->
+      <div class="royal-gold-sheen"></div>
+
+      <!-- CARD HEADER: Generation Badge & Verification Icon -->
       <div class="d-flex align-items-center justify-content-between mb-1" :class="{ 'mb-0': compact }">
         <span 
-          class="badge rounded-pill font-monospace" 
-          :class="[
-            node.isBlank ? 'bg-warning text-dark' : 'bg-primary text-white',
-            compact ? 'px-1 py-0' : 'px-2 py-1'
-          ]"
-          :style="{ fontSize: compact ? '0.62rem' : '0.7rem' }"
+          class="badge rounded-pill font-monospace d-flex align-items-center gap-1 shadow-sm" 
+          :style="{
+            background: genStyle.badgeBg,
+            border: `1px solid ${genStyle.badgeBorder}`,
+            color: genStyle.badgeText,
+            fontSize: compact ? '0.62rem' : '0.72rem',
+            padding: compact ? '1px 6px' : '2px 8px'
+          }"
         >
-          {{ node.label || (isRoot ? 'Asosiy Boshlanish' : 'Avlod') }}
+          <i :class="genStyle.icon" style="font-size: 0.85em;"></i>
+          <span>{{ node.label || genStyle.roman }}</span>
         </span>
 
         <span v-if="isAnswered && node.isBlank">
@@ -97,13 +160,16 @@ function getNodeStatus(node) {
         </span>
       </div>
 
+      <!-- CARD BODY -->
       <div class="node-content text-center" :class="compact ? 'py-0' : 'py-1'">
-        <div v-if="!node.isBlank" class="fw-bold text-white small" :style="{ fontSize: compact ? '0.8rem' : '0.88rem' }">
+        <!-- Static Node Text -->
+        <div v-if="!node.isBlank" class="fw-bold text-white small" :style="{ fontSize: compact ? '0.82rem' : '0.92rem' }">
           {{ node.text }}
         </div>
 
+        <!-- Placed Card Content -->
         <div v-else-if="placedCards[node.id]" class="placed-card-content position-relative">
-          <div class="fw-bold text-white small text-truncate" :style="{ fontSize: compact ? '0.8rem' : '0.88rem' }">
+          <div class="fw-bold text-white small text-truncate" :style="{ fontSize: compact ? '0.82rem' : '0.92rem' }">
             {{ placedCards[node.id].text }}
           </div>
           <button 
@@ -117,23 +183,33 @@ function getNodeStatus(node) {
           </button>
         </div>
 
+        <!-- Blank Slot Empty Placeholder -->
         <div v-else class="empty-placeholder d-flex align-items-center justify-content-center text-muted" :class="compact ? 'py-1 gap-1' : 'flex-column py-2'">
           <i class="bi bi-plus-circle text-warning" :class="compact ? 'fs-6' : 'fs-4 mb-1'"></i>
           <span class="fw-semibold text-warning" :style="{ fontSize: compact ? '0.7rem' : '0.8rem' }">Bo'sh katak</span>
         </div>
 
+        <!-- Correct Answer Revealed After Evaluation -->
         <div v-if="isAnswered && node.isBlank && getNodeStatus(node) !== 'correct'" class="mt-1 pt-1 border-top border-danger border-opacity-50">
-          <small class="text-success fw-bold d-block" :style="{ fontSize: compact ? '0.65rem' : '0.75rem' }">
+          <small class="text-success fw-bold d-block text-truncate" :style="{ fontSize: compact ? '0.65rem' : '0.75rem' }">
             <i class="bi bi-check2 me-1"></i> Asl: {{ node.text }}
           </small>
         </div>
       </div>
     </div>
 
-    <!-- STEM DOWN -->
-    <div v-if="children.length > 0" class="tree-stem-down" :class="{ 'compact-stem': compact }"></div>
+    <!-- STEM DOWN (Glowing gradient into next generation) -->
+    <div 
+      v-if="children.length > 0" 
+      class="tree-stem-down" 
+      :class="{ 'compact-stem': compact }"
+      :style="{
+        background: `linear-gradient(to bottom, ${genStyle.stemColor}, ${nextGenStyle.stemColor})`,
+        boxShadow: `0 0 8px ${genStyle.glow}`
+      }"
+    ></div>
 
-    <!-- RECURSIVE CHILDREN ROW -->
+    <!-- RECURSIVE CHILDREN ROW (Siblings in Next Generation) -->
     <div 
       v-if="children.length > 0" 
       class="tree-children-row d-flex justify-content-center flex-wrap position-relative w-100"
@@ -142,12 +218,20 @@ function getNodeStatus(node) {
         'gap-2 compact-children-row': compact,
         'gap-3': !compact
       }"
+      :style="{
+        '--branch-color': nextGenStyle.stemColor,
+        '--branch-glow': nextGenStyle.glow
+      }"
     >
       <div 
         v-for="child in children" 
         :key="child.id" 
         class="tree-child-col d-flex flex-column align-items-center position-relative"
         :class="{ 'compact-child-col': compact }"
+        :style="{
+          '--child-stem-color': nextGenStyle.stemColor,
+          '--child-stem-glow': nextGenStyle.glow
+        }"
       >
         <FlowTreeNodePlay 
           :node="child"
@@ -157,6 +241,7 @@ function getNodeStatus(node) {
           :placed-cards="placedCards"
           :selected-card="selectedCard"
           :compact="compact"
+          :depth="depth + 1"
           @slot-click="emit('slot-click', $event)"
           @unplace="emit('unplace', $event)"
           @drop-slot="emit('drop-slot', $event)"
@@ -170,30 +255,31 @@ function getNodeStatus(node) {
 <style scoped>
 .flow-node {
   min-height: 85px;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
   cursor: pointer;
+  border-width: 2px;
+  border-style: solid;
 }
 
 .compact-card {
-  min-height: 46px !important;
+  min-height: 48px !important;
 }
 
-.static-node {
-  background-color: rgba(30, 41, 59, 0.85);
-  border: 2px solid rgba(59, 130, 246, 0.5);
-  cursor: default;
+/* Royal gold sheen on the top rim */
+.royal-gold-sheen {
+  position: absolute;
+  top: 0;
+  left: 15%;
+  right: 15%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #FACC15, transparent);
+  border-radius: 2px;
+  pointer-events: none;
+  opacity: 0.8;
 }
 
 .blank-empty {
-  background-color: rgba(15, 23, 42, 0.6);
-  border: 2px dashed #F59E0B;
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.15);
-}
-
-.blank-filled {
-  background-color: #1E293B;
-  border: 2px solid #F59E0B;
-  box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
+  border-style: dashed !important;
 }
 
 .active-target {
@@ -212,16 +298,6 @@ function getNodeStatus(node) {
   }
 }
 
-.node-correct {
-  background-color: rgba(16, 185, 129, 0.2) !important;
-  border: 2px solid #10B981 !important;
-}
-
-.node-wrong {
-  background-color: rgba(239, 68, 68, 0.2) !important;
-  border: 2px solid #EF4444 !important;
-}
-
 .btn-unplace {
   position: absolute;
   top: -24px;
@@ -231,13 +307,13 @@ function getNodeStatus(node) {
   font-size: 0.9rem;
   line-height: 1;
   background-color: #1E293B;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .tree-stem-down {
-  width: 2px;
+  width: 3px;
   height: 20px;
-  background-color: #38BDF8;
-  opacity: 0.6;
+  border-radius: 2px;
 }
 
 .compact-stem {
@@ -258,19 +334,21 @@ function getNodeStatus(node) {
   top: 0;
   left: 10%;
   right: 10%;
-  height: 2px;
-  background-color: #38BDF8;
-  opacity: 0.6;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--branch-color, #EAB308);
+  box-shadow: 0 0 8px var(--branch-glow, rgba(234, 179, 8, 0.4));
 }
 
 .tree-child-col::before {
   content: '';
   position: absolute;
   top: 0;
-  width: 2px;
+  width: 3px;
   height: 14px;
-  background-color: #38BDF8;
-  opacity: 0.6;
+  border-radius: 2px;
+  background: var(--child-stem-color, #EAB308);
+  box-shadow: 0 0 8px var(--child-stem-glow, rgba(234, 179, 8, 0.4));
 }
 
 .compact-child-col::before {

@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import FlowTreeNodePlay from './FlowTreeNodePlay.vue';
+import { getGenerationStyle, GENERATION_PALETTES } from '../utils/flowchartTheme.js';
 
 const props = defineProps({
   question: {
@@ -278,6 +279,52 @@ function getNodeStatus(node) {
   if (!placed) return 'empty';
   return placed.nodeId === node.id ? 'correct' : 'wrong';
 }
+
+// Dynamic styling for Linear, Cycle, and Hierarchy nodes matching Oltin Sulola
+function getNodeCardStyle(node, idx) {
+  const genStyle = getGenerationStyle(idx);
+  const isFilled = node.isBlank && placedCards.value[node.id];
+  const isTarget = selectedCard.value && node.isBlank && !isAnswered.value;
+
+  if (isAnswered.value && node.isBlank) {
+    const status = getNodeStatus(node);
+    if (status === 'correct') {
+      return {
+        background: 'linear-gradient(135deg, rgba(6, 78, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
+        borderColor: '#10B981',
+        boxShadow: '0 0 20px rgba(16, 185, 129, 0.65)'
+      };
+    } else {
+      return {
+        background: 'linear-gradient(135deg, rgba(127, 29, 29, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
+        borderColor: '#EF4444',
+        boxShadow: '0 0 20px rgba(239, 68, 68, 0.65)'
+      };
+    }
+  }
+
+  if (isTarget) {
+    return {
+      background: 'radial-gradient(circle at center, rgba(245, 158, 11, 0.2) 0%, rgba(15, 23, 42, 0.95) 100%)',
+      borderColor: '#F59E0B',
+      boxShadow: '0 0 20px rgba(245, 158, 11, 0.8)'
+    };
+  }
+
+  if (node.isBlank && !isFilled) {
+    return {
+      background: 'radial-gradient(circle at center, rgba(245, 158, 11, 0.08) 0%, rgba(15, 23, 42, 0.95) 100%)',
+      borderColor: '#F59E0B',
+      boxShadow: '0 0 12px rgba(245, 158, 11, 0.25)'
+    };
+  }
+
+  return {
+    background: genStyle.bg,
+    borderColor: genStyle.border,
+    boxShadow: `0 0 15px ${genStyle.glow}, inset 0 1px 0 rgba(255, 255, 255, 0.15)`
+  };
+}
 </script>
 
 <template>
@@ -285,8 +332,8 @@ function getNodeStatus(node) {
     
     <!-- Top Bar: Instruction & Zoom Controls -->
     <div 
-      class="alert py-1 px-3 small fw-bold shadow-sm d-flex justify-content-between align-items-center mb-2"
-      style="background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); color: #E2E8F0;"
+      class="alert py-1 px-3 small fw-bold shadow-sm d-flex justify-content-between align-items-center mb-1"
+      style="background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px); border: 1px solid rgba(245, 158, 11, 0.3); color: #E2E8F0;"
     >
       <div class="d-flex align-items-center gap-2">
         <i class="bi bi-hand-index-thumb text-warning fs-5"></i>
@@ -300,6 +347,7 @@ function getNodeStatus(node) {
       <div class="d-flex align-items-center gap-1">
         <!-- Compact Toggle -->
         <button 
+          type="button"
           @click="isCompact = !isCompact" 
           class="btn btn-xs py-1 px-2 rounded-pill border border-secondary"
           :class="isCompact ? 'btn-info text-dark fw-bold' : 'btn-dark text-white opacity-75'"
@@ -313,6 +361,7 @@ function getNodeStatus(node) {
         <!-- Side / Bottom Dock Toggle -->
         <button 
           v-if="question.layout === 'branching'"
+          type="button"
           @click="useSideDock = !useSideDock" 
           class="btn btn-xs py-1 px-2 rounded-pill border border-secondary"
           :class="useSideDock ? 'btn-primary text-white' : 'btn-dark text-white opacity-75'"
@@ -323,19 +372,39 @@ function getNodeStatus(node) {
         </button>
 
         <!-- Zoom Controls -->
-        <button @click="zoomOut" class="btn btn-xs btn-dark border border-secondary text-white py-1 px-2 rounded-circle" title="Kichraytirish">
+        <button type="button" @click="zoomOut" class="btn btn-xs btn-dark border border-secondary text-white py-1 px-2 rounded-circle" title="Kichraytirish">
           <i class="bi bi-dash"></i>
         </button>
         <span class="badge bg-dark border border-secondary text-info font-monospace py-1 px-2" style="font-size: 0.75rem;">
           {{ Math.round(zoomLevel * 100) }}%
         </span>
-        <button @click="zoomIn" class="btn btn-xs btn-dark border border-secondary text-white py-1 px-2 rounded-circle" title="Kattalashtirish">
+        <button type="button" @click="zoomIn" class="btn btn-xs btn-dark border border-secondary text-white py-1 px-2 rounded-circle" title="Kattalashtirish">
           <i class="bi bi-plus"></i>
         </button>
-        <button @click="autoFitZoom" class="btn btn-xs btn-outline-info py-1 px-2 rounded-pill" style="font-size: 0.72rem;" title="Ekranga sig'dirish">
+        <button type="button" @click="autoFitZoom" class="btn btn-xs btn-outline-info py-1 px-2 rounded-pill" style="font-size: 0.72rem;" title="Ekranga sig'dirish">
           <i class="bi bi-aspect-ratio"></i> Sig'dirish
         </button>
       </div>
+    </div>
+
+    <!-- Dynasty Legend (Shajara Avlodlari ko'rsatkichi) -->
+    <div 
+      v-if="question.layout === 'branching'" 
+      class="dynasty-legend d-flex align-items-center gap-1 overflow-auto py-1 px-3 mb-2 rounded-pill border border-warning border-opacity-25 shadow-sm"
+      style="background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);"
+    >
+      <span class="small fw-bold text-warning font-monospace text-nowrap me-1">
+        <i class="bi bi-crown-fill text-warning me-1"></i> Shajara:
+      </span>
+      <span 
+        v-for="p in GENERATION_PALETTES.slice(0, 4)" 
+        :key="p.depth" 
+        class="badge rounded-pill d-inline-flex align-items-center gap-1 font-monospace"
+        :style="{ background: p.badgeBg, border: `1px solid ${p.badgeBorder}`, color: p.badgeText, fontSize: '0.65rem' }"
+      >
+        <i :class="p.icon" style="font-size: 0.8em;"></i>
+        <span>{{ p.roman }}</span>
+      </span>
     </div>
 
     <!-- MAIN BODY: EITHER SIDE-DOCK (FOR BRANCHING/FAMILY TREE) OR COLUMN (FOR LINEAR/CYCLE) -->
@@ -363,25 +432,37 @@ function getNodeStatus(node) {
           <div v-if="question.layout === 'linear'" class="layout-linear d-flex align-items-center justify-content-center flex-wrap gap-2 py-2 w-100">
             <template v-for="(node, idx) in question.nodes" :key="node.id">
               <div 
-                class="flow-node position-relative shadow-md transition-all"
+                class="flow-node position-relative transition-all"
                 :class="{
                   'rounded-3 p-2 compact-card': isCompact,
                   'rounded-4 p-3': !isCompact,
-                  'static-node': !node.isBlank,
                   'blank-empty': node.isBlank && !placedCards[node.id] && !isAnswered,
                   'blank-filled': node.isBlank && placedCards[node.id] && !isAnswered,
-                  'node-correct': isAnswered && getNodeStatus(node) === 'correct',
-                  'node-wrong': isAnswered && (getNodeStatus(node) === 'wrong' || getNodeStatus(node) === 'empty'),
                   'active-target': selectedCard && node.isBlank && !isAnswered
                 }"
-                :style="{ minWidth: isCompact ? '130px' : '160px', maxWidth: isCompact ? '170px' : '200px' }"
+                :style="{ 
+                  ...getNodeCardStyle(node, idx),
+                  minWidth: isCompact ? '135px' : '165px', 
+                  maxWidth: isCompact ? '175px' : '205px' 
+                }"
                 @click="handleSlotClick(node)"
                 @dragover.prevent
                 @drop="onDropSlot(node, $event)"
               >
+                <div class="royal-gold-sheen"></div>
                 <div class="d-flex align-items-center justify-content-between mb-1">
-                  <span class="badge rounded-pill px-2 py-0 font-monospace" :class="node.isBlank ? 'bg-warning text-dark' : 'bg-primary text-white'" style="font-size: 0.65rem;">
-                    {{ node.label || `${idx + 1}-bosqich` }}
+                  <span 
+                    class="badge rounded-pill font-monospace d-flex align-items-center gap-1 shadow-sm"
+                    :style="{
+                      background: getGenerationStyle(idx).badgeBg,
+                      border: `1px solid ${getGenerationStyle(idx).badgeBorder}`,
+                      color: getGenerationStyle(idx).badgeText,
+                      fontSize: isCompact ? '0.62rem' : '0.68rem',
+                      padding: isCompact ? '1px 6px' : '2px 8px'
+                    }"
+                  >
+                    <i :class="getGenerationStyle(idx).icon"></i>
+                    <span>{{ node.label || getGenerationStyle(idx).roman }}</span>
                   </span>
                   <span v-if="isAnswered && node.isBlank">
                     <i v-if="getNodeStatus(node) === 'correct'" class="bi bi-check-circle-fill text-success fs-6"></i>
@@ -390,9 +471,9 @@ function getNodeStatus(node) {
                 </div>
 
                 <div class="node-content text-center py-1">
-                  <div v-if="!node.isBlank" class="fw-bold text-white small">{{ node.text }}</div>
+                  <div v-if="!node.isBlank" class="fw-bold text-white small" :style="{ fontSize: isCompact ? '0.82rem' : '0.92rem' }">{{ node.text }}</div>
                   <div v-else-if="placedCards[node.id]" class="placed-card-content position-relative">
-                    <div class="fw-bold text-white small text-truncate">{{ placedCards[node.id].text }}</div>
+                    <div class="fw-bold text-white small text-truncate" :style="{ fontSize: isCompact ? '0.82rem' : '0.92rem' }">{{ placedCards[node.id].text }}</div>
                     <button v-if="!isAnswered" @click.stop="unplaceCard(node.id)" class="btn-unplace btn btn-sm btn-outline-danger p-0 rounded-circle">
                       <i class="bi bi-x"></i>
                     </button>
@@ -408,7 +489,7 @@ function getNodeStatus(node) {
               </div>
 
               <div v-if="idx < question.nodes.length - 1" class="arrow-indicator text-secondary d-flex align-items-center px-1">
-                <i class="bi bi-arrow-right fs-4 text-info"></i>
+                <i class="bi bi-arrow-right fs-4 text-warning" style="filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.5));"></i>
               </div>
             </template>
           </div>
@@ -424,6 +505,7 @@ function getNodeStatus(node) {
               :placed-cards="placedCards"
               :selected-card="selectedCard"
               :compact="isCompact"
+              :depth="0"
               @slot-click="handleSlotClick($event)"
               @unplace="unplaceCard($event)"
               @drop-slot="onDropSlot($event.node, $event.event)"
@@ -434,25 +516,37 @@ function getNodeStatus(node) {
           <div v-else-if="question.layout === 'cycle'" class="layout-cycle d-flex align-items-center justify-content-center flex-wrap gap-2 py-2 w-100">
             <template v-for="(node, idx) in question.nodes" :key="node.id">
               <div 
-                class="flow-node position-relative shadow-md transition-all"
+                class="flow-node position-relative transition-all"
                 :class="{
                   'rounded-3 p-2 compact-card': isCompact,
                   'rounded-4 p-3': !isCompact,
-                  'static-node': !node.isBlank,
                   'blank-empty': node.isBlank && !placedCards[node.id] && !isAnswered,
                   'blank-filled': node.isBlank && placedCards[node.id] && !isAnswered,
-                  'node-correct': isAnswered && getNodeStatus(node) === 'correct',
-                  'node-wrong': isAnswered && (getNodeStatus(node) === 'wrong' || getNodeStatus(node) === 'empty'),
                   'active-target': selectedCard && node.isBlank && !isAnswered
                 }"
-                :style="{ minWidth: isCompact ? '130px' : '160px', maxWidth: isCompact ? '170px' : '200px' }"
+                :style="{ 
+                  ...getNodeCardStyle(node, idx),
+                  minWidth: isCompact ? '135px' : '165px', 
+                  maxWidth: isCompact ? '175px' : '205px' 
+                }"
                 @click="handleSlotClick(node)"
                 @dragover.prevent
                 @drop="onDropSlot(node, $event)"
               >
+                <div class="royal-gold-sheen"></div>
                 <div class="d-flex align-items-center justify-content-between mb-1">
-                  <span class="badge rounded-pill px-2 py-0 font-monospace" :class="node.isBlank ? 'bg-warning text-dark' : 'bg-primary text-white'" style="font-size: 0.65rem;">
-                    {{ node.label || `${idx + 1}-bosqich` }}
+                  <span 
+                    class="badge rounded-pill font-monospace d-flex align-items-center gap-1 shadow-sm"
+                    :style="{
+                      background: getGenerationStyle(idx).badgeBg,
+                      border: `1px solid ${getGenerationStyle(idx).badgeBorder}`,
+                      color: getGenerationStyle(idx).badgeText,
+                      fontSize: isCompact ? '0.62rem' : '0.68rem',
+                      padding: isCompact ? '1px 6px' : '2px 8px'
+                    }"
+                  >
+                    <i :class="getGenerationStyle(idx).icon"></i>
+                    <span>{{ node.label || getGenerationStyle(idx).roman }}</span>
                   </span>
                   <span v-if="isAnswered && node.isBlank">
                     <i v-if="getNodeStatus(node) === 'correct'" class="bi bi-check-circle-fill text-success fs-6"></i>
@@ -461,9 +555,9 @@ function getNodeStatus(node) {
                 </div>
 
                 <div class="node-content text-center py-1">
-                  <div v-if="!node.isBlank" class="fw-bold text-white small">{{ node.text }}</div>
+                  <div v-if="!node.isBlank" class="fw-bold text-white small" :style="{ fontSize: isCompact ? '0.82rem' : '0.92rem' }">{{ node.text }}</div>
                   <div v-else-if="placedCards[node.id]" class="placed-card-content position-relative">
-                    <div class="fw-bold text-white small text-truncate">{{ placedCards[node.id].text }}</div>
+                    <div class="fw-bold text-white small text-truncate" :style="{ fontSize: isCompact ? '0.82rem' : '0.92rem' }">{{ placedCards[node.id].text }}</div>
                     <button v-if="!isAnswered" @click.stop="unplaceCard(node.id)" class="btn-unplace btn btn-sm btn-outline-danger p-0 rounded-circle">
                       <i class="bi bi-x"></i>
                     </button>
@@ -479,10 +573,10 @@ function getNodeStatus(node) {
               </div>
 
               <div v-if="idx < question.nodes.length - 1" class="arrow-indicator text-secondary d-flex align-items-center px-1">
-                <i class="bi bi-arrow-right fs-4 text-info"></i>
+                <i class="bi bi-arrow-right fs-4 text-warning" style="filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.5));"></i>
               </div>
               <div v-else class="arrow-indicator text-warning d-flex align-items-center px-1" title="Aylanma davr">
-                <i class="bi bi-arrow-repeat fs-3 text-warning"></i>
+                <i class="bi bi-arrow-repeat fs-3 text-warning" style="filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.7));"></i>
               </div>
             </template>
           </div>
@@ -491,25 +585,36 @@ function getNodeStatus(node) {
           <div v-else class="layout-hierarchy d-flex flex-column align-items-center w-100 py-2 gap-2">
             <template v-for="(node, idx) in question.nodes" :key="node.id">
               <div 
-                class="flow-node position-relative shadow-md transition-all"
+                class="flow-node position-relative transition-all"
                 :class="{
                   'rounded-3 p-2 compact-card': isCompact,
                   'rounded-4 p-3': !isCompact,
-                  'static-node': !node.isBlank,
                   'blank-empty': node.isBlank && !placedCards[node.id] && !isAnswered,
                   'blank-filled': node.isBlank && placedCards[node.id] && !isAnswered,
-                  'node-correct': isAnswered && getNodeStatus(node) === 'correct',
-                  'node-wrong': isAnswered && (getNodeStatus(node) === 'wrong' || getNodeStatus(node) === 'empty'),
                   'active-target': selectedCard && node.isBlank && !isAnswered
                 }"
-                :style="{ width: `${170 + idx * 30}px` }"
+                :style="{ 
+                  ...getNodeCardStyle(node, idx),
+                  width: `${175 + idx * 30}px` 
+                }"
                 @click="handleSlotClick(node)"
                 @dragover.prevent
                 @drop="onDropSlot(node, $event)"
               >
+                <div class="royal-gold-sheen"></div>
                 <div class="d-flex align-items-center justify-content-between mb-1">
-                  <span class="badge rounded-pill px-2 py-0 font-monospace" :class="node.isBlank ? 'bg-warning text-dark' : 'bg-primary text-white'" style="font-size: 0.65rem;">
-                    {{ node.label || `${idx + 1}-daraja` }}
+                  <span 
+                    class="badge rounded-pill font-monospace d-flex align-items-center gap-1 shadow-sm"
+                    :style="{
+                      background: getGenerationStyle(idx).badgeBg,
+                      border: `1px solid ${getGenerationStyle(idx).badgeBorder}`,
+                      color: getGenerationStyle(idx).badgeText,
+                      fontSize: '0.65rem',
+                      padding: '2px 8px'
+                    }"
+                  >
+                    <i :class="getGenerationStyle(idx).icon"></i>
+                    <span>{{ node.label || `${idx + 1}-daraja` }}</span>
                   </span>
                   <span v-if="isAnswered && node.isBlank">
                     <i v-if="getNodeStatus(node) === 'correct'" class="bi bi-check-circle-fill text-success fs-6"></i>
@@ -535,28 +640,29 @@ function getNodeStatus(node) {
                 </div>
               </div>
 
-              <i v-if="idx < question.nodes.length - 1" class="bi bi-arrow-down fs-4 text-info my-1"></i>
+              <i v-if="idx < question.nodes.length - 1" class="bi bi-arrow-down fs-4 text-warning my-1" style="filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.5));"></i>
             </template>
           </div>
 
         </div>
       </div>
 
-      <!-- CARD BANK CONTAINER (SIDE DOCK OR BOTTOM) -->
+      <!-- CARD BANK CONTAINER (ROYAL TREASURY / VARIANTLAR BANKI) -->
       <div 
-        class="card-bank-container p-2 rounded-4 shadow-lg border border-secondary border-opacity-25 d-flex flex-column"
+        class="card-bank-container p-2 rounded-4 shadow-lg border d-flex flex-column"
         :class="{
           'side-dock-bank': useSideDock,
           'w-100 mt-2': !useSideDock
         }"
-        style="background: rgba(15, 23, 42, 0.95);"
+        style="background: radial-gradient(circle at top, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.98)); border-color: rgba(245, 158, 11, 0.35) !important; box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);"
       >
         <div class="d-flex align-items-center justify-content-between mb-2 px-1">
-          <span class="small fw-bold text-secondary text-uppercase tracking-wider">
-            <i class="bi bi-collection-fill text-info me-1"></i> Variantlar:
+          <span class="small fw-bold text-warning text-uppercase tracking-wider d-flex align-items-center gap-1">
+            <i class="bi bi-gem text-warning"></i>
+            <span>Variantlar Banki:</span>
           </span>
-          <span class="badge bg-dark border border-secondary text-info font-monospace" v-if="!isAnswered">
-            {{ cardBank.length }} ta
+          <span class="badge rounded-pill border border-warning border-opacity-50 text-warning font-monospace" style="background: rgba(245, 158, 11, 0.15);" v-if="!isAnswered">
+            {{ cardBank.length }} ta qoldi
           </span>
         </div>
 
@@ -570,13 +676,13 @@ function getNodeStatus(node) {
             v-if="cardBank.length === 0 && !isAnswered" 
             class="text-success small fw-bold d-flex align-items-center justify-content-center py-2 text-center"
           >
-            <i class="bi bi-check-all fs-4 me-1"></i> Barchasi joylandi!
+            <i class="bi bi-check-all fs-4 me-1"></i> Barcha variantlar joylandi!
           </div>
 
           <div 
             v-for="card in cardBank" 
             :key="card.id"
-            class="bank-card p-2 px-3 rounded-3 d-flex align-items-center gap-2 shadow-sm transition-all text-truncate"
+            class="bank-card p-2 px-3 rounded-3 d-flex align-items-center gap-2 shadow-sm transition-all text-truncate position-relative"
             :class="{
               'card-selected': selectedCard && selectedCard.id === card.id,
               'card-disabled': isAnswered,
@@ -586,7 +692,7 @@ function getNodeStatus(node) {
             @dragstart="onDragStart(card, $event)"
             @click="selectBankCard(card)"
           >
-            <i class="bi bi-grip-vertical text-secondary cursor-grab" v-if="!isAnswered"></i>
+            <i class="bi bi-grip-vertical text-warning opacity-75 cursor-grab" v-if="!isAnswered"></i>
             <span class="fw-bold small text-white text-truncate">{{ card.text }}</span>
           </div>
         </div>
@@ -594,6 +700,7 @@ function getNodeStatus(node) {
         <!-- SUBMIT BUTTON (INSIDE SIDE DOCK OR BOTTOM) -->
         <div class="mt-2 text-center pt-1 border-top border-secondary border-opacity-25">
           <button 
+            type="button"
             @click="submitAnswer" 
             class="btn btn-warning rounded-pill fw-bold shadow-lg w-100"
             :class="useSideDock ? 'btn-md py-2' : 'btn-lg px-5 py-2'"
@@ -617,8 +724,9 @@ function getNodeStatus(node) {
 }
 
 .diagram-container {
-  background: radial-gradient(circle at center, #1E293B 0%, #0B1120 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: radial-gradient(circle at 50% 15%, rgba(245, 158, 11, 0.08) 0%, rgba(15, 23, 42, 0.98) 75%);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.7);
 }
 
 /* Side dock card bank */
@@ -630,30 +738,30 @@ function getNodeStatus(node) {
 
 .flow-node {
   min-height: 85px;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
   cursor: pointer;
+  border-width: 2px;
+  border-style: solid;
 }
 
 .compact-card {
-  min-height: 46px !important;
+  min-height: 48px !important;
 }
 
-.static-node {
-  background-color: rgba(30, 41, 59, 0.85);
-  border: 2px solid rgba(59, 130, 246, 0.5);
-  cursor: default;
+.royal-gold-sheen {
+  position: absolute;
+  top: 0;
+  left: 15%;
+  right: 15%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #FACC15, transparent);
+  border-radius: 2px;
+  pointer-events: none;
+  opacity: 0.8;
 }
 
 .blank-empty {
-  background-color: rgba(15, 23, 42, 0.6);
-  border: 2px dashed #F59E0B;
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.15);
-}
-
-.blank-filled {
-  background-color: #1E293B;
-  border: 2px solid #F59E0B;
-  box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
+  border-style: dashed !important;
 }
 
 .active-target {
@@ -672,16 +780,6 @@ function getNodeStatus(node) {
   }
 }
 
-.node-correct {
-  background-color: rgba(16, 185, 129, 0.2) !important;
-  border: 2px solid #10B981 !important;
-}
-
-.node-wrong {
-  background-color: rgba(239, 68, 68, 0.2) !important;
-  border: 2px solid #EF4444 !important;
-}
-
 .btn-unplace {
   position: absolute;
   top: -20px;
@@ -691,28 +789,35 @@ function getNodeStatus(node) {
   font-size: 0.85rem;
   line-height: 1;
   background-color: #1E293B;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .bank-card {
-  background-color: #243046;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   cursor: grab;
+  user-select: none;
+  transition: all 0.2s ease;
 }
 
 .bank-card:hover {
-  background-color: #2F3E58;
+  background: linear-gradient(135deg, rgba(45, 55, 75, 0.95) 0%, rgba(20, 30, 50, 0.98) 100%);
+  border-color: #F59E0B !important;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.5) !important;
   transform: translateY(-2px);
 }
 
 .card-selected {
-  background-color: #F59E0B !important;
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%) !important;
   color: #000 !important;
-  border-color: #F59E0B !important;
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.8) !important;
-  transform: scale(1.02);
+  border-color: #FEF08A !important;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.9) !important;
+  transform: scale(1.03);
 }
 .card-selected span {
   color: #000 !important;
+  font-weight: 800 !important;
 }
 
 .card-disabled {
