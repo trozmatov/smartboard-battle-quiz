@@ -1023,6 +1023,9 @@ onMounted(async () => {
                       <option :value="60">60 soniya (1 daqiqa)</option>
                       <option :value="120">120 soniya (2 daqiqa)</option>
                       <option :value="180">180 soniya (3 daqiqa)</option>
+                      <option :value="300">300 soniya (5 daqiqa)</option>
+                      <option :value="600">600 soniya (10 daqiqa)</option>
+                      <option :value="900">900 soniya (15 daqiqa)</option>
                     </select>
                   </div>
 

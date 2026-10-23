@@ -184,6 +184,35 @@ const layouts = [
 
 // View tab in editor: 'canvas' (Interaktiv Preview) or 'list' (Jadval)
 const editorView = ref('canvas'); // 'canvas' | 'list'
+
+// Zoom & Compact state for Editor Preview
+const zoomLevel = ref(1.0);
+const isCompact = ref(props.question.layout === 'branching');
+
+function autoFitZoom() {
+  const count = nodes.value.length || 0;
+  if (count >= 16) {
+    zoomLevel.value = 0.65;
+  } else if (count >= 10) {
+    zoomLevel.value = 0.75;
+  } else if (count >= 6) {
+    zoomLevel.value = 0.88;
+  } else {
+    zoomLevel.value = 1.0;
+  }
+}
+
+function zoomIn() {
+  zoomLevel.value = Math.min(1.4, +(zoomLevel.value + 0.1).toFixed(2));
+}
+
+function zoomOut() {
+  zoomLevel.value = Math.max(0.45, +(zoomLevel.value - 0.1).toFixed(2));
+}
+
+function resetZoom() {
+  zoomLevel.value = 1.0;
+}
 </script>
 
 <template>
@@ -258,13 +287,40 @@ const editorView = ref('canvas'); // 'canvas' | 'list'
       
       <!-- Canvas Header Bar -->
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-2 mb-3 border-bottom border-secondary border-opacity-25">
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
           <span class="badge bg-info text-dark fw-bold px-3 py-2 fs-6">
             <i class="bi bi-pencil-square me-1"></i> Interaktiv Sxema Muharriri (Canvas)
           </span>
           <span class="badge bg-dark border border-secondary text-light">
             Jami: {{ nodes.length }} ta blok
           </span>
+
+          <!-- Zoom & Compact Controls for Teacher -->
+          <button 
+            type="button"
+            @click="isCompact = !isCompact" 
+            class="btn btn-xs rounded-pill px-2 py-1 fw-bold border ms-2"
+            :class="isCompact ? 'btn-info text-dark border-info shadow-sm' : 'btn-dark text-secondary border-secondary'"
+            title="Ixcham/Keng ko'rinish"
+          >
+            <i class="bi me-1" :class="isCompact ? 'bi-arrows-angle-contract' : 'bi-arrows-angle-expand'"></i>
+            {{ isCompact ? 'Ixcham rejim' : 'Keng rejim' }}
+          </button>
+
+          <div class="btn-group btn-group-sm bg-dark rounded-pill border border-secondary border-opacity-50 p-0 overflow-hidden">
+            <button type="button" @click="zoomOut" class="btn btn-xs btn-outline-secondary text-white border-0 py-1 px-2" title="Kichraytirish">
+              <i class="bi bi-dash-lg"></i>
+            </button>
+            <button type="button" @click="resetZoom" class="btn btn-xs btn-dark text-info border-0 py-1 px-2 font-monospace fw-bold" style="font-size: 0.75rem;" title="100% tiklash">
+              {{ Math.round(zoomLevel * 100) }}%
+            </button>
+            <button type="button" @click="zoomIn" class="btn btn-xs btn-outline-secondary text-white border-0 py-1 px-2" title="Kattalashtirish">
+              <i class="bi bi-plus-lg"></i>
+            </button>
+            <button type="button" @click="autoFitZoom" class="btn btn-xs btn-outline-warning text-warning border-0 py-1 px-2" title="Ekranga sig'dirish">
+              <i class="bi bi-arrows-fullscreen me-1"></i> Sig'dirish
+            </button>
+          </div>
         </div>
 
         <div class="d-flex align-items-center gap-2 small">
@@ -295,21 +351,30 @@ const editorView = ref('canvas'); // 'canvas' | 'list'
       </div>
 
       <!-- INTERACTIVE PREVIEW DIAGRAM VIEWPORTS -->
-      <div class="interactive-canvas py-4 px-2 d-flex justify-content-center align-items-start overflow-auto" style="min-height: 420px;">
+      <div class="interactive-canvas py-4 px-2 d-flex justify-content-center align-items-start overflow-auto position-relative" style="min-height: 420px; max-height: 720px;">
         
-        <!-- ==================== 1. BRANCHING / FAMILY TREE LAYOUT (Unlimited Depth) ==================== -->
-        <div v-if="question.layout === 'branching'" class="tree-root-container d-flex flex-column align-items-center w-100">
-          <FlowTreeNodeEditor 
-            v-if="rootNode"
-            :node="rootNode"
-            :all-nodes="nodes"
-            :is-root="true"
-            :max-nodes-reached="nodes.length >= 24"
-            @add-child="addChild($event)"
-            @remove-node="removeNodeById($event)"
-            @toggle-blank="toggleBlank($event)"
-          />
-        </div>
+        <div 
+          class="canvas-zoom-wrapper w-100 d-flex justify-content-center"
+          :style="{
+            transform: `scale(${zoomLevel})`,
+            transformOrigin: 'top center',
+            transition: 'transform 0.2s ease'
+          }"
+        >
+          <!-- ==================== 1. BRANCHING / FAMILY TREE LAYOUT (Unlimited Depth) ==================== -->
+          <div v-if="question.layout === 'branching'" class="tree-root-container d-flex flex-column align-items-center w-100">
+            <FlowTreeNodeEditor 
+              v-if="rootNode"
+              :node="rootNode"
+              :all-nodes="nodes"
+              :is-root="true"
+              :compact="isCompact"
+              :max-nodes-reached="nodes.length >= 24"
+              @add-child="addChild($event)"
+              @remove-node="removeNodeById($event)"
+              @toggle-blank="toggleBlank($event)"
+            />
+          </div>
 
         <!-- ==================== 2. LINEAR CHAIN LAYOUT ==================== -->
         <div v-else-if="question.layout === 'linear'" class="d-flex align-items-center justify-content-center flex-wrap gap-3 py-2 w-100">
@@ -511,9 +576,11 @@ const editorView = ref('canvas'); // 'canvas' | 'list'
           </button>
         </div>
 
-      </div>
+        </div> <!-- end canvas-zoom-wrapper -->
 
-    </div>
+      </div> <!-- end interactive-canvas -->
+
+    </div> <!-- end card -->
 
     <!-- ==================== DISTRACTORS SECTION ==================== -->
     <div class="distractors-section p-3 rounded-4 border border-secondary border-opacity-25" style="background-color: #162032;">
