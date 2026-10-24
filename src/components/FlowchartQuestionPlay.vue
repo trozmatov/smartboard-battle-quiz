@@ -40,6 +40,8 @@ const draggedCard = ref(null);
 const zoomLevel = ref(1.0);
 const isCompact = ref(true);
 const useSideDock = ref(props.question.layout === 'branching'); // Side bank for family trees
+const smartFillLocal = ref(props.question.smartFill !== false);
+const isSmartFill = computed(() => smartFillLocal.value && props.question.layout === 'branching');
 
 // Auto-fit zoom calculation
 function autoFitZoom() {
@@ -115,6 +117,7 @@ function initPuzzle() {
   autoFitZoom();
   isCompact.value = (q.nodes?.length || 0) >= 5 || q.layout === 'branching';
   useSideDock.value = q.layout === 'branching';
+  smartFillLocal.value = q.smartFill !== false;
 }
 
 watch(questionKey, initPuzzle, { immediate: true });
@@ -132,6 +135,17 @@ watch(() => props.timeLeft, (newVal) => {
 });
 
 // ==================== INTERACTION LOGIC ====================
+
+// Recursive descendant IDs lookup for Smart Fill branch retraction
+function getAllDescendantIds(parentId) {
+  const descendants = [];
+  const directChildren = childrenMap.value[parentId] || [];
+  for (const child of directChildren) {
+    descendants.push(child.id);
+    descendants.push(...getAllDescendantIds(child.id));
+  }
+  return descendants;
+}
 
 // 1. Select card from bank (Tap-to-Place step 1)
 function selectBankCard(card) {
@@ -153,9 +167,9 @@ function handleSlotClick(node) {
   if (selectedCard.value) {
     const cardToPlace = selectedCard.value;
 
-    // If slot already had a card, return old card to bank
+    // If slot already had a card, cleanly unplace it (and its descendants if smartFill)
     if (currentPlaced) {
-      cardBank.value.push(currentPlaced);
+      unplaceCard(node.id);
     }
 
     // Place new card
@@ -170,11 +184,26 @@ function handleSlotClick(node) {
   }
 }
 
-// 3. Unplace a card from slot and return to bank
+// 3. Unplace a card from slot and return to bank (with recursive Smart Fill retraction)
 function unplaceCard(nodeId) {
   if (isAnswered.value) return;
   const card = placedCards.value[nodeId];
   if (!card) return;
+
+  // If Smart Fill is active: recursively remove placed cards in all descendants and return to bank!
+  if (isSmartFill.value) {
+    const descendantIds = getAllDescendantIds(nodeId);
+    for (const descId of descendantIds) {
+      const descCard = placedCards.value[descId];
+      if (descCard) {
+        delete placedCards.value[descId];
+        cardBank.value.push(descCard);
+        if (selectedCard.value?.id === descCard.id) {
+          selectedCard.value = null;
+        }
+      }
+    }
+  }
 
   delete placedCards.value[nodeId];
   cardBank.value.push(card);
@@ -202,7 +231,7 @@ function onDropSlot(node, event) {
 
   const currentPlaced = placedCards.value[node.id];
   if (currentPlaced) {
-    cardBank.value.push(currentPlaced);
+    unplaceCard(node.id);
   }
 
   placedCards.value[node.id] = card;
@@ -389,6 +418,20 @@ function getNodeCardStyle(node, idx) {
           <span>Ixcham</span>
         </button>
 
+        <!-- Smart Fill Toggle (Progressive Reveal) -->
+        <button 
+          v-if="question.layout === 'branching'"
+          type="button"
+          @click="smartFillLocal = !smartFillLocal" 
+          class="btn btn-xs py-1 px-2 rounded-pill border border-secondary"
+          :class="isSmartFill ? 'btn-warning text-dark fw-bold' : 'btn-dark text-white opacity-75'"
+          style="font-size: 0.72rem;"
+          title="Smart Fill (Avlodlarni bosqichma-bosqich ochish) rejimini yoqish/o'chirish"
+        >
+          <i class="bi bi-diagram-3-fill me-1"></i>
+          <span>Smart Fill</span>
+        </button>
+
         <!-- Side / Bottom Dock Toggle -->
         <button 
           v-if="question.layout === 'branching'"
@@ -537,6 +580,7 @@ function getNodeCardStyle(node, idx) {
               :node="rootNode"
               :all-nodes="question.nodes"
               :children-map="childrenMap"
+              :smart-fill="isSmartFill"
               :is-root="true"
               :is-answered="isAnswered"
               :placed-cards="placedCards"

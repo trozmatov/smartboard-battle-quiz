@@ -38,6 +38,10 @@ const props = defineProps({
   childrenMap: {
     type: Object,
     default: () => ({})
+  },
+  smartFill: {
+    type: Boolean,
+    default: true
   }
 });
 
@@ -61,6 +65,17 @@ const children = computed(() => {
     }
     return false;
   });
+});
+
+// Smart Fill visibility logic:
+// Show descendants if:
+// 1) Node has children
+// 2) AND either smartFill is off, quiz is evaluated, node is static (like Abulxayrxon), or node has been filled with a card!
+const shouldShowChildren = computed(() => {
+  if (children.value.length === 0) return false;
+  if (!props.smartFill || props.isAnswered) return true;
+  if (!props.node.isBlank) return true;
+  return !!props.placedCards[props.node.id];
 });
 
 function getNodeStatus(node) {
@@ -194,6 +209,15 @@ const dynamicCardStyle = computed(() => {
         <div v-else class="empty-placeholder d-flex align-items-center justify-content-center text-muted" :class="compact ? 'py-1 gap-1' : 'flex-column py-2'">
           <i class="bi bi-plus-circle" :style="{ color: genStyle.accent }" :class="compact ? 'fs-6' : 'fs-5 mb-1'"></i>
           <span class="fw-semibold" :style="{ color: genStyle.accent, fontSize: compact ? '0.7rem' : '0.8rem' }">Bo'sh katak</span>
+          <!-- Smart Fill Hint: shows how many child descendants this branch holds before unlocking -->
+          <span 
+            v-if="smartFill && !shouldShowChildren && children.length > 0 && !isAnswered" 
+            class="badge rounded-pill mt-1 border border-warning border-opacity-50 text-warning font-monospace"
+            :style="{ fontSize: compact ? '0.58rem' : '0.65rem', background: 'rgba(245, 158, 11, 0.15)' }"
+            title="Ushbu shaxs joylangach quyi avlodlari ochiladi"
+          >
+            <i class="bi bi-diagram-3-fill me-1"></i>{{ children.length }} ta avlod
+          </span>
         </div>
 
         <!-- Correct Answer Revealed After Evaluation -->
@@ -207,19 +231,18 @@ const dynamicCardStyle = computed(() => {
 
     <!-- STEM DOWN (From parent card down to children connector bar) -->
     <div 
-      v-if="children.length > 0" 
+      v-if="shouldShowChildren" 
       class="tree-stem-down" 
       :class="{ 'compact-stem': compact }"
       :style="{
-        background: `linear-gradient(to bottom, ${genStyle.stemColor}, ${nextGenStyle.stemColor})`,
-        boxShadow: `0 0 8px ${genStyle.glow}`
+        background: `linear-gradient(to bottom, ${genStyle.stemColor}, ${nextGenStyle.stemColor})`
       }"
     ></div>
 
     <!-- RECURSIVE CHILDREN ROW (Siblings in Next Generation: NEVER WRAP!) -->
     <div 
-      v-if="children.length > 0" 
-      class="tree-children-row d-flex justify-content-center flex-nowrap position-relative"
+      v-if="shouldShowChildren" 
+      class="tree-children-row d-flex justify-content-center flex-nowrap position-relative branch-reveal-anim"
       :class="{ 
         'multiple-children': children.length > 1,
         'compact-children-row': compact
@@ -243,6 +266,7 @@ const dynamicCardStyle = computed(() => {
           :node="child"
           :all-nodes="allNodes"
           :children-map="childrenMap"
+          :smart-fill="smartFill"
           :is-root="false"
           :is-answered="isAnswered"
           :placed-cards="placedCards"
@@ -342,6 +366,23 @@ const dynamicCardStyle = computed(() => {
 
 .compact-children-row {
   padding-top: 10px !important;
+}
+
+/* Smooth Progressive Reveal Animation */
+.branch-reveal-anim {
+  animation: branchFadeIn 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top center;
+}
+
+@keyframes branchFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Each sibling column */

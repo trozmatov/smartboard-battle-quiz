@@ -20,6 +20,9 @@ if (!props.question.layout) {
 if (!props.question.scoringType) {
   props.question.scoringType = 'partial';
 }
+if (props.question.smartFill === undefined) {
+  props.question.smartFill = true;
+}
 if (!props.question.nodes || !Array.isArray(props.question.nodes) || props.question.nodes.length === 0) {
   props.question.nodes = [
     { id: 'n1', text: 'Chingizxon', isBlank: false, label: '1-qadam', parentId: null },
@@ -292,6 +295,37 @@ function resetZoom() {
               <div class="fw-bold small text-white">Hammasi yoki Hech narsa (100%)</div>
               <div class="small opacity-75" style="font-size: 0.75rem;">Faqat barcha kataklar to'liq to'g'ri bo'lsagina ball beriladi.</div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Smart Fill Option for Branching / Family Tree -->
+      <div v-if="question.layout === 'branching'" class="col-12 mt-2">
+        <div 
+          class="p-2 px-3 rounded-3 border d-flex align-items-center justify-content-between cursor-pointer"
+          :class="question.smartFill !== false ? 'border-warning bg-warning bg-opacity-10 text-white' : 'border-secondary border-opacity-25 text-secondary'"
+          @click="question.smartFill = question.smartFill === false ? true : false"
+          style="cursor: pointer;"
+        >
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-diagram-3-fill fs-5 text-warning"></i>
+            <div>
+              <div class="fw-bold small text-white d-flex align-items-center gap-2">
+                <span>Smart Fill (Avlodlarni bosqichma-bosqich ochish)</span>
+                <span class="badge bg-warning text-dark font-monospace" style="font-size: 0.65rem;">Tavsiya etiladi</span>
+              </div>
+              <div class="small opacity-75" style="font-size: 0.75rem;">
+                O'quvchi ota-ajdod katagini to'ldirgandan so'ng, unga mos keyingi avlod bo'sh kataklari ochiladi.
+              </div>
+            </div>
+          </div>
+          <div class="form-check form-switch m-0 fs-5">
+            <input 
+              class="form-check-input cursor-pointer" 
+              type="checkbox" 
+              :checked="question.smartFill !== false"
+              @change="question.smartFill = $event.target.checked"
+            />
           </div>
         </div>
       </div>
